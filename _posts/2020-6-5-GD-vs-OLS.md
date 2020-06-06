@@ -20,12 +20,12 @@ So, I'd like to include the proof here.
 
 First, let's introduce some terminologies and notations. Consider a multiple linear regression:
 
-\\[h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) = \theta_1 x_1^{(i)} + \theta_2 x_2^{(i)}  + ... + \theta_n x_n^{(i)} 
+\\[h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) = \theta_0 + \theta_1 x_1^{(i)} + \theta_2 x_2^{(i)}  + ... + \theta_n x_n^{(i)} 
 = \boldsymbol \theta^T \boldsymbol x^{(i)} = {\boldsymbol x^{(i)}}^T \boldsymbol \theta \\]
 where 
-$\boldsymbol \theta = \begin{bmatrix} \theta_1 \\\ \theta_2 \\\ \vdots \\\ \theta_n \end{bmatrix}$，
-$\boldsymbol x^{(i)} = \begin{bmatrix} x_1^{(i)} \\\ x_2^{(i)} \\\ \vdots \\\ x_n^{(i)} \end{bmatrix}$，
-$\boldsymbol y = \begin{bmatrix} y_1 \\\ y_2 \\\ \vdots \\\ y_n \end{bmatrix}$
+$\boldsymbol \theta = \begin{bmatrix} \theta_0 \\\ \theta_1 \\\ \vdots \\\ \theta_n \end{bmatrix}$，
+$\boldsymbol x^{(i)} = \begin{bmatrix} 1 \\\ x_1^{(i)} \\\ x_2^{(i)} \\\ \vdots \\\ x_n^{(i)} \end{bmatrix}$，
+$\boldsymbol y = \begin{bmatrix} y_1 \\\ y_2 \\\ \vdots \\\ y_m \end{bmatrix}$
 
 $\boldsymbol y$ is the target，$h_{\boldsymbol \theta}(\boldsymbol x^{(i)})$ is the hypothesis function,
 $m$ is number of training samples / observations, $n$ is number of features for multiple linear regression,
@@ -38,13 +38,41 @@ The objective is to estimate parameters $\boldsymbol \theta$, so that hypothesis
 
 
 ### Gradient Descent
-Since the cost function will be a convex bowl-shaped graph, let's use a 2-dimension projection between $J$ and $\theta_i$
+Since the cost function is a convex bowl-shaped graph, let's use a 2-dimension projection between $J$ and $\theta_i$
 to explain how the algorithm works.
 
 2-dimension projection looks like:
-![cost function plot](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
 
+<p align="center">
+  <img width="400" height="250" src="https://raw.githubusercontent.com/shakewingo/shakewingo.github.io/master/images/cost_function.png">
+</p>
 
+In order to get the minimum point, the algorithm will start from a higher point, using learning rate and derivatives / slope
+through many iterations until it gets there. Both derivaties $\frac{\partial J}{\partial \boldsymbol \theta}$ and learning rate $\alpha$
+will impact on how fast the algorithm goes until it reaches the bottom. If $\alpha$ is too large, it can bring in divergent problem too.
+Because of this, normalization and wisely choose $\alpha$ within the model becomes important.
+
+Now the expression of gradient descent becomes:
+$ {\theta}_j := {\theta}_j - \alpha \frac {\partial J(\boldsymbol \theta)} {\partial \theta_j} $
+
+Furthermore we have:
+
+$$\frac {\partial J(\boldsymbol \theta)} {\partial \theta_j} 
+= \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ 
+\frac {\partial h_{\boldsymbol \theta}(\boldsymbol x^{(i)})} {\partial \theta_j}
+= \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \
+\frac {\boldsymbol x^{(i)} \partial {\boldsymbol \theta}^T} {\partial \theta_j} 
+= \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ \boldsymbol x^{(i)} $$,
+
+which satisfies all except $\theta_0$, which the derivatives part will become 1 as $\theta_0$ is a constant.
+
+Therefore in summary:
+
+$$ {\theta}_0 := {\theta}_0 - \alpha \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) $$
+
+$$ \vdots $$
+
+$$ {\theta}_n := {\theta}_n - \alpha \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ \boldsymbol x^{(i)} $$
 
 
 
@@ -61,10 +89,10 @@ $= \begin{bmatrix} \boldsymbol \theta^T \boldsymbol x^{(1)} - y_1 \\ \dots\\ \bo
 Also have $\begin{bmatrix} \boldsymbol \theta^T \boldsymbol x^{(1)} - y_1 \\\ \vdots\\\ \boldsymbol \theta^T \boldsymbol x^{(m)} - y_m \end{bmatrix}
 =\begin{bmatrix} \boldsymbol \theta^T \boldsymbol x^{(1)} \\\ \vdots\\\ \boldsymbol \theta^T \boldsymbol x^{(m)} \end{bmatrix} - \boldsymbol y
 =\begin{bmatrix} {\boldsymbol x^{(1)}}^T \boldsymbol \theta \\\ \vdots\\\ {\boldsymbol x^{(m)}}^T \boldsymbol \theta \end{bmatrix} - \boldsymbol y 
-= \boldsymbol X \boldsymbol \theta - \boldsymbol y$
+= \boldsymbol X \boldsymbol \theta - \boldsymbol y$, 
 
 where $\boldsymbol X = \begin{bmatrix} {\boldsymbol x^{(1)}}^T \\\ \vdots\\\ {\boldsymbol x^{(m)}}^T \end{bmatrix}
-= \begin{bmatrix}x_1^{(1)} & x_2^{(1)} & \dots & x_n^{(1)}\\\ \vdots\\\ x_1^{(m)} & x_2^{(m)} & \dots & x_n^{(m)}\end{bmatrix}_{m \times n}$
+= \begin{bmatrix} 1 & x_1^{(1)} & x_2^{(1)} & \dots & x_n^{(1)}\\\ \vdots\\\ 1 & x_1^{(m)} & x_2^{(m)} & \dots & x_n^{(m)}\end{bmatrix}_{m \times (n+1)}$
 
 Therefore have:
 
@@ -105,7 +133,7 @@ $$ \frac{\partial J}{\partial \boldsymbol \theta}
 where $ \boldsymbol X$ and $\boldsymbol y$ are constants.
 
 Furthermore, recall [matrix calculus](https://en.wikipedia.org/wiki/Matrix_calculus) can infer that:
-$$ \partial {\boldsymbol \theta}^T \boldsymbol \theta = 2 \boldsymbol \theta,  
+$$ \partial {\boldsymbol \theta}^T \boldsymbol \theta = 2 \boldsymbol \theta, 
 \partial {\boldsymbol \theta}^T  = {(\partial \boldsymbol \theta)}^T = 1 $$
 
 Therefore we have:
