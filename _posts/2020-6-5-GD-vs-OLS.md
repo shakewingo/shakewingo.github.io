@@ -47,7 +47,7 @@ to explain how the algorithm works.
   <img width="400" height="250" src="https://raw.githubusercontent.com/shakewingo/shakewingo.github.io/master/images/cost_function.png">
 </p>
 
-In order to get the minimum point, the algorithm will start from a higher point, using learning rate and derivatives / slope
+In order to get the minimum point, the algorithm will start from a higher point $\theta_i$, using learning rate and derivatives / slope
 through many iterations until it gets there. Both derivaties $\frac{\partial J}{\partial \boldsymbol \theta}$ and learning rate $\alpha$
 will impact on how fast the algorithm goes until it reaches the bottom. If $\alpha$ is too large, it can bring in divergent problem too.
 Because of this, normalization and wisely choose $\alpha$ within the model becomes important.
@@ -57,22 +57,24 @@ $ {\theta}_j := {\theta}_j - \alpha \frac {\partial J(\boldsymbol \theta)} {\par
 
 Furthermore we have:
 
-$$\frac {\partial J(\boldsymbol \theta)} {\partial \theta_j} 
+$$ \frac {\partial J(\boldsymbol \theta)} {\partial \theta_j} 
 = \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ 
 \frac {\partial h_{\boldsymbol \theta}(\boldsymbol x^{(i)})} {\partial \theta_j}
 = \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \
 \frac {\boldsymbol x^{(i)} \partial {\boldsymbol \theta}^T} {\partial \theta_j} 
 = \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ \boldsymbol x^{(i)} $$,
 
-which satisfies all except $\theta_0$, which the derivatives part will become 1 as $\theta_0$ is a constant.
+This satisfies all except $\theta_0$, which the derivatives part is equal to 1 as $\theta_0$ is a constant.
 
-Therefore in summary:
+Finally, the algorithm becomes:
 
 $$ {\theta}_0 := {\theta}_0 - \alpha \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) $$
 
 $$ \vdots $$
 
 $$ {\theta}_n := {\theta}_n - \alpha \frac{1}{m} \sum_{i=1}^m (h_{\boldsymbol \theta}(\boldsymbol x^{(i)}) - y_i) \ \boldsymbol x^{(i)} $$
+
+Note that parameters $\theta_0$, $\theta_1$, ..., $\theta_n$ **must be updated simultaneously** in gradient descent.
 
 
 
