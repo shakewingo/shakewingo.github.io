@@ -2,7 +2,7 @@
 layout: post
 mathjax: true
 title: Build Website on Github
-categories: IT knowledge
+categories: IT
 ---
 
 I combined knowledge from 

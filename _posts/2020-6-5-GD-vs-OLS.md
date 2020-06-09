@@ -2,7 +2,7 @@
 layout: post
 mathjax: true
 title: Gradient Descent vs Ordinary Least Square in Linear Regression
-categories: Mathematics and statistics
+categories: Math&Stats
 ---
 
 ## Introduction
@@ -14,7 +14,7 @@ similarity and difference of these two methods.
 Hopefully after this, we will have better understanding on the aspect of both theory and experiments.
 
 ## Theory
-While I was reviewing [Machine Learning by Andrew Ng](https://www.youtube.com/playlist?list=PLLssT5z_DsK-h9vYZkQkYNWcItqhlRJLN),
+While I was reviewing [Machine Learninxg by Andrew Ng](https://www.youtube.com/playlist?list=PLLssT5z_DsK-h9vYZkQkYNWcItqhlRJLN),
 the course skipped the proof part of OLS, by default thinking that we have sufficient matrix knowledge (do we? lol).
 So, I'd like to include the proof here.
 
