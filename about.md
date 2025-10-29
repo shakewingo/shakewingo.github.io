@@ -12,8 +12,6 @@ playing bass, adventure sports and watching various TV shows just for fun.
 
 I'd like to use this place to centralize my learning and thoughts. So here we go.
 
-### My CV
-TBD
 
 ### Contact me
 [yaoyingshakewin@gmail.com](mailto:yaoyingshakewin@gmail.com)
