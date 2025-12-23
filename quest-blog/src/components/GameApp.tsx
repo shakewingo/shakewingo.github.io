@@ -1,5 +1,4 @@
 'use client';
-hello
 import React, { useState, useEffect } from 'react';
 import {
   Terminal,
