@@ -39,19 +39,7 @@ export async function getQuests(): Promise<Quest[]> {
       })
   );
 
-  const upcomingQuests: Quest[] = [
-    {
-      slug: '',
-      title: 'The Dialectical Method',
-      date: '2024-10-30',
-      preview: 'Philosophy meets code structure.',
-      excerpt: 'Exploring how Hegelian dialectics can apply to refactoring legacy codebases.',
-      difficulty: 'Easy',
-      difficultyColor: 'bg-green-500',
-    },
-  ];
-
-  return [...mdxQuests, ...upcomingQuests].sort(
+  return mdxQuests.sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 }
