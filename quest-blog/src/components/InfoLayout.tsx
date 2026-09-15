@@ -16,7 +16,7 @@ export default function InfoLayout({ title, description, children }: InfoLayoutP
           href="/"
           className="inline-flex items-center gap-2 text-green-500 hover:text-green-400 uppercase font-bold text-sm"
         >
-          <ChevronLeft size={16} /> Back to Map
+          <ChevronLeft size={16} /> Home
         </Link>
 
         <section className="bg-slate-900 border-4 border-slate-800 p-6 md:p-12 shadow-[0_0_30px_rgba(0,0,0,0.5)]">

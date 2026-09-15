@@ -1,0 +1,2843 @@
+{
+  "schemaVersion": 1,
+  "knowledgeBases": [
+    "Algorithm",
+    "Engineering",
+    "ML Course",
+    "Alisa’s LLM notebook"
+  ],
+  "repository": "https://github.com/shakewingo/llm-wiki",
+  "commit": "08034d7f38517e16350ac6a4bb4ab49a3ab5ae79",
+  "updatedAt": "2026-09-11T01:04:37Z",
+  "nodes": [
+    {
+      "id": "alignment-methods",
+      "title": "RLHF, DPO, and GRPO",
+      "type": "comparison",
+      "domains": [
+        "post-training",
+        "alignment"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "| Method | Data during optimization | Extra models | Strength | Main risk | |---|---|---|---|---| | PPO-RLHF | Fresh policy rollouts | Reward, value, reference | Flexible arbitrary reward | Expensive and unstable | | DPO | Static chosen/rejected pairs | Reference | Simple offline objective | Limited to preference coverage | | GRPO | Groups of policy samples | Reward/reference; no value model | Relative online signal with fewer models | Rollout cost and group-sensitive signal |",
+      "body": "| Method | Data during optimization | Extra models | Strength | Main risk |\n|---|---|---|---|---|\n| [PPO-RLHF](/garden/#rlhf) | Fresh policy rollouts | Reward, value, reference | Flexible arbitrary reward | Expensive and unstable |\n| [DPO](/garden/#direct-preference-optimization) | Static chosen/rejected pairs | Reference | Simple offline objective | Limited to preference coverage |\n| [GRPO](/garden/#group-relative-policy-optimization) | Groups of policy samples | Reward/reference; no value model | Relative online signal with fewer models | Rollout cost and group-sensitive signal |\n\nThe choice is not “old versus new.” Use PPO when online reward composition and\nexploration justify complexity, DPO when a strong offline preference dataset exists,\nand GRPO when multiple verifiable samples per prompt provide a useful relative\nbaseline. All three need drift control and independent evaluation.\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 753,
+      "y": 451
+    },
+    {
+      "id": "attention-cache-strategies",
+      "title": "MHA, MQA, GQA, and MLA",
+      "type": "comparison",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "These designs answer the same serving question differently: how much distinct K/V state should be retained for many query heads?",
+      "body": "These designs answer the same serving question differently: how much distinct K/V\nstate should be retained for many query heads?\n\n| Design | Cached representation | Main advantage | Main tradeoff |\n|---|---|---|---|\n| MHA | Separate K/V per query head | Maximum per-head diversity | Largest cache and bandwidth |\n| [MQA](/garden/#multi-query-attention) | One shared K/V head | Smallest head-based cache | Least K/V diversity |\n| [GQA](/garden/#grouped-query-attention) | One K/V head per query group | Tunable quality/efficiency balance | Group count becomes a model choice |\n| [MLA](/garden/#multi-head-latent-attention) | Joint low-rank K/V latent plus positional component | Low cache with multi-head reconstruction | More algebra and kernel complexity |\n\nMHA→GQA→MQA changes the number of KV heads. MLA instead changes the representation\nstored in the cache. Its absorbed decode path can behave operationally like shared\nK/V while retaining learned reconstruction. None of the choices removes the need\nfor correct [causal attention](/garden/#causal-attention), positions, allocation,\nor eviction.\n\n## Interview frame\n\nStart from bytes moved per generated token, then discuss quality and kernel support.\nA model architecture with a smaller theoretical cache can still underperform if its\nruntime materializes large tensors or lacks an optimized attention kernel.",
+      "x": 349,
+      "y": 402
+    },
+    {
+      "id": "backpropagation-and-autodiff",
+      "title": "Backpropagation and Automatic Differentiation",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "training"
+      ],
+      "aliases": [
+        "backpropagation",
+        "backprop",
+        "automatic differentiation",
+        "autodiff"
+      ],
+      "knowledgeBases": [
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Backpropagation computes parameter gradients by applying the chain rule through a computation graph in reverse topological order. Each operation combines an incoming gradient with its local derivative; gradients add when one value feeds multiple downstream branches.",
+      "body": "Backpropagation computes parameter gradients by applying the chain rule through a\ncomputation graph in reverse topological order. Each operation combines an incoming\ngradient with its local derivative; gradients add when one value feeds multiple\ndownstream branches.\n\nReverse-mode automatic differentiation is efficient for a scalar loss with many\nparameters because one reverse traversal produces every parameter gradient. Its\ncompute is of the same order as the forward pass, but it needs intermediate\nactivations. Activation checkpointing stores selected boundaries and recomputes the\nmissing forward segments during backward, exchanging extra compute for lower memory.\n\nGradient checking with centered finite differences is useful for small tests, but\nit scales poorly and is sensitive to step size and floating-point error.\n\n## Interview answer\n\n“Backprop is reverse-mode autodiff over a computation graph. It multiplies upstream\nand local derivatives, sums at fan-out points, and normally retains forward\nactivations; checkpointing saves memory by recomputing some of them.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Deep Learning with PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 614,
+      "y": 263
+    },
+    {
+      "id": "bayesian-networks",
+      "title": "Bayesian Networks",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "causal-ml"
+      ],
+      "aliases": [
+        "Bayes net",
+        "belief network"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "A Bayesian network represents a joint distribution with a directed acyclic graph: each node is conditionally distributed given its parents, and the joint probability factorizes into those local conditional distributions.",
+      "body": "A Bayesian network represents a joint distribution with a directed acyclic graph:\neach node is conditionally distributed given its parents, and the joint probability\nfactorizes into those local conditional distributions.\n\nThe graph encodes conditional independencies, which makes inference and learning\nmore tractable than an unconstrained joint table. Variable elimination answers\nqueries by summing out irrelevant variables. A graph learned from observational\ndata is not automatically causal: equivalence classes, hidden confounders, data\nscarcity, and incorrect independence tests can leave directions unidentified.\nExpert constraints or interventions provide stronger evidence.\n\n## Interview answer\n\n“A Bayes net factorizes a joint distribution according to a DAG. It supports compact\nprobabilistic inference, while causal interpretation requires additional assumptions\nor interventions.”\n\n## Sources\n\n- [Gatech CS6601 - AI](https://www.yuque.com/shakewin/fidaqi/dlm2n18clgtdxppy)\n- [Causal Structure Learning](https://www.yuque.com/shakewin/woezs0/zbne4d5yhpdwnasv)",
+      "x": 719,
+      "y": 352
+    },
+    {
+      "id": "bert",
+      "title": "BERT",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "pretraining"
+      ],
+      "aliases": [
+        "Bidirectional Encoder Representations from Transformers"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "BERT is an encoder-only Transformer pretrained to build bidirectional token representations and then fine-tuned for downstream understanding tasks.",
+      "body": "BERT is an encoder-only Transformer pretrained to build bidirectional token\nrepresentations and then fine-tuned for downstream understanding tasks.\n\nMasked-language modeling hides selected tokens and predicts them from both left and\nright context. The original model also used next-sentence prediction. Task-specific\nheads adapt the representation to classification, span-based question answering,\nand other discriminative tasks. Unlike a causal decoder, BERT does not naturally\ngenerate long text token by token.\n\n## Sources\n\n- [BERT](https://www.yuque.com/shakewin/woezs0/havcwgm88z0449od)\n- [Deep Learning PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)\n- [MLi Paper Reading](https://www.yuque.com/shakewin/woezs0/hhoofowylkt3t2id)",
+      "x": 557,
+      "y": 572
+    },
+    {
+      "id": "causal-attention",
+      "title": "Causal Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "masked self-attention"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "Causal attention masks future positions so token $t$ can depend only on tokens at positions $\\leq t$, matching autoregressive generation.",
+      "body": "Causal attention masks future positions so token $t$ can depend only on tokens at\npositions $\\leq t$, matching autoregressive generation.\n\nDuring training and prefill, all query positions can be processed in parallel under\nthe triangular mask. During decode, the new query length is one while keys and\nvalues span the existing prefix. This asymmetry is why cached prefix state saves\nrecomputation but grows with context length.\n\nAn incorrect mask leaks future tokens during training; a cache position error makes\nthe model attend with the wrong chronology.\n\n## Interview answer\n\n“Causal attention is self-attention with a future-token mask. Training is parallel\nover positions, but generation is sequential; each decode step queries the entire\nvisible prefix.”\n\n## Sources\n\n- [Attention is All You Need](https://www.yuque.com/shakewin/woezs0/wfnf4pb8yxth3i36)\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)",
+      "x": 572,
+      "y": 355
+    },
+    {
+      "id": "causal-structure-learning",
+      "title": "Causal Structure Learning",
+      "type": "concept",
+      "domains": [
+        "causal-ml",
+        "applied-ml"
+      ],
+      "aliases": [
+        "causal discovery"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "Causal structure learning infers graph structure from statistical dependencies, independencies, scores, interventions, and domain constraints.",
+      "body": "Causal structure learning infers graph structure from statistical dependencies,\nindependencies, scores, interventions, and domain constraints.\n\nConstraint-based algorithms remove edges using conditional-independence tests and\norient identifiable colliders. Score-based algorithms search graph equivalence\nclasses for a fit-complexity objective such as BIC. Observational data often identifies\nonly a Markov-equivalence class, not one causal DAG. Hidden confounders, selection\nbias, nonstationarity, and weak tests make confident arrows dangerous; expert knowledge\nand interventions should be recorded as separate evidence.\n\n## Source\n\n- [Causal Structure Learning](https://www.yuque.com/shakewin/woezs0/zbne4d5yhpdwnasv)",
+      "x": 559,
+      "y": 293
+    },
+    {
+      "id": "chain-of-thought-reasoning",
+      "title": "Chain-of-Thought Reasoning",
+      "type": "concept",
+      "domains": [
+        "reasoning",
+        "post-training"
+      ],
+      "aliases": [
+        "CoT",
+        "reasoning trace"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "Chain-of-thought prompting or training elicits intermediate reasoning steps before a final answer, often improving multi-step tasks in sufficiently capable models.",
+      "body": "Chain-of-thought prompting or training elicits intermediate reasoning steps before a\nfinal answer, often improving multi-step tasks in sufficiently capable models.\n\nReasoning traces can be supplied through demonstrations, generated and filtered for\nSFT, optimized with outcome or process rewards, or distilled into smaller models.\nVisible explanations are not guaranteed to be faithful to internal computation and\nmay contain plausible mistakes. Evaluation should therefore verify the final result\nand critical steps rather than treating length as reasoning quality.\n\n## Sources\n\n- [MLi Paper Reading](https://www.yuque.com/shakewin/woezs0/hhoofowylkt3t2id)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 556,
+      "y": 499
+    },
+    {
+      "id": "classical-ml-methods",
+      "title": "Classical ML Methods",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "applied-ml"
+      ],
+      "aliases": [
+        "classical machine learning"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "Classical ML remains useful when data is tabular, labels are scarce, latency is tight, or interpretability matters. Decision trees split features to reduce impurity; bagging reduces variance; boosting fits successive residual errors; regularized linear models provide strong simple baselines.",
+      "body": "Classical ML remains useful when data is tabular, labels are scarce, latency is\ntight, or interpretability matters. Decision trees split features to reduce impurity;\nbagging reduces variance; boosting fits successive residual errors; regularized\nlinear models provide strong simple baselines.\n\nUnsupervised methods expose structure without labels. PCA preserves directions of\nmaximum variance, ICA seeks statistically independent components, density clustering\nfinds irregular clusters, and isolation methods detect points separated quickly by\nrandom partitions. Each method embeds assumptions about scale, distance, density,\nor linearity, so preprocessing and evaluation must match the data-generating process.\n\n## Sources\n\n- [Stats / ML Algorithm Overview](https://www.yuque.com/shakewin/woezs0/gkhfzndmawi1mp01)\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)",
+      "x": 1000,
+      "y": 296
+    },
+    {
+      "id": "context-parallelism",
+      "title": "Context Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "training",
+        "inference"
+      ],
+      "aliases": [
+        "CP",
+        "sequence parallelism",
+        "ring attention"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Context parallelism shards the sequence dimension across devices so no rank owns all long-context activations or attention state. Each rank holds a query block and must combine it with every required key/value block while preserving causal masking and the numerically stable softmax reduction.",
+      "body": "Context parallelism shards the sequence dimension across devices so no rank owns\nall long-context activations or attention state. Each rank holds a query block and\nmust combine it with every required key/value block while preserving causal masking\nand the numerically stable softmax reduction.\n\nRing attention rotates K/V blocks between neighboring ranks. For each arriving tile,\na rank updates the running maximum, denominator, and weighted-value accumulator for\nits local queries—the distributed analogue of FlashAttention's online softmax.\nOther layouts use all-to-all transformations or sequence-parallel sublayers.\n\nThe method extends feasible context length but adds communication proportional to\nthe circulated state. Load balance, topology, overlap, position handling, and causal\ntile scheduling determine whether memory savings translate into speed.\n\n## Interview answer\n\n“Context parallelism partitions tokens rather than layers or matrix dimensions.\nRing attention circulates K/V tiles and combines them with online softmax, reducing\nper-device context memory while paying communication and scheduling overhead.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)",
+      "x": 638,
+      "y": 459
+    },
+    {
+      "id": "continuous-batching-and-sequence-packing",
+      "title": "Continuous Batching and Sequence Packing",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "serving",
+        "training"
+      ],
+      "aliases": [
+        "continuous batching",
+        "in-flight batching",
+        "sequence packing",
+        "token-budget batching"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Static batching waits for every sequence in a batch to finish, wasting slots when generation lengths differ. Continuous batching removes completed requests and admits new work at iteration boundaries, keeping more of the accelerator occupied. Schedulers may also mix compute-heavy prefill with bandwidth-heavy decode, subject to latency and memory budgets.",
+      "body": "Static batching waits for every sequence in a batch to finish, wasting slots when\ngeneration lengths differ. Continuous batching removes completed requests and\nadmits new work at iteration boundaries, keeping more of the accelerator occupied.\nSchedulers may also mix compute-heavy prefill with bandwidth-heavy decode, subject\nto latency and memory budgets.\n\nSequence packing concatenates shorter examples into a fixed token budget and masks\ncross-example attention. It is common in training and fine-tuning; serving engines\ninstead maintain independent request states while dynamically assembling each step.\nBoth reduce padding waste, but incorrect masks or position IDs can leak information\nbetween sequences.\n\nPaged KV-cache allocation complements continuous batching because request slots can\ngrow, finish, and be reclaimed without requiring one contiguous maximum-sized cache.\n\n## Interview answer\n\n“Continuous batching replaces finished generation requests immediately instead of\nwaiting for the longest sequence. Sequence packing reduces padding by sharing a\ntoken budget, but must preserve independent masks and positions.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Prompt Caching and Prefix Cache](https://www.yuque.com/shakewin/sysgq3/fddexv7e29h99vrl)",
+      "x": 550,
+      "y": 412
+    },
+    {
+      "id": "data-parallelism",
+      "title": "Data Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "training"
+      ],
+      "aliases": [
+        "DP",
+        "distributed data parallel"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Data parallelism replicates a model across workers, processes different mini-batch shards, and synchronizes gradients so replicas remain equivalent.",
+      "body": "Data parallelism replicates a model across workers, processes different mini-batch\nshards, and synchronizes gradients so replicas remain equivalent.\n\nAll-reduce communication grows with parameter size, while useful compute grows with\nlocal batch size. Small microbatches, slow links, stragglers, or incorrect loss\nscaling reduce efficiency. DDP keeps complete parameters and optimizer state on every\nworker; sharded variants reduce that redundancy at the cost of more communication\nand lifecycle complexity.\n\n## Source\n\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 606,
+      "y": 683
+    },
+    {
+      "id": "decoding-sampling-strategies",
+      "title": "Decoding and Sampling Strategies",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "evaluation"
+      ],
+      "aliases": [
+        "top-k",
+        "top-p",
+        "nucleus sampling"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Decoding converts next-token probabilities into output. Greedy decoding always picks the maximum; beam search keeps several high-scoring sequences; temperature rescales logits; top-k samples among a fixed number of tokens; top-p samples from the smallest set whose cumulative mass reaches a threshold.",
+      "body": "Decoding converts next-token probabilities into output. Greedy decoding always picks\nthe maximum; beam search keeps several high-scoring sequences; temperature rescales\nlogits; top-k samples among a fixed number of tokens; top-p samples from the smallest\nset whose cumulative mass reaches a threshold.\n\nLower temperature is more deterministic, while higher temperature increases diversity\nand error risk. Beam search can favor generic sequences and is expensive for open-ended\ndialogue. Sampling settings are part of an evaluation configuration: comparing models\nunder different decoding policies confounds model quality with search behavior.\n\n## Sources\n\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 369,
+      "y": 233
+    },
+    {
+      "id": "deep-learning-optimization",
+      "title": "Deep Learning Optimization",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "training"
+      ],
+      "aliases": [
+        "AdamW",
+        "gradient clipping",
+        "learning-rate schedule"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "An optimizer converts gradients into parameter updates. SGD follows the current gradient; Adam tracks exponential moving averages of the gradient and its square, then bias-corrects and normalizes the update. AdamW decouples weight decay from that adaptive gradient step so regularization is not distorted by per-parameter scaling.",
+      "body": "An optimizer converts gradients into parameter updates. SGD follows the current\ngradient; Adam tracks exponential moving averages of the gradient and its square,\nthen bias-corrects and normalizes the update. AdamW decouples weight decay from that\nadaptive gradient step so regularization is not distorted by per-parameter scaling.\n\nLearning-rate schedules control the global step size over time. Warmup avoids large,\npoorly calibrated early updates; later decay supports convergence. Gradient clipping\nrescales an excessive global gradient norm without changing its direction, limiting\ncatastrophic steps but not fixing persistently bad data or objectives.\n\nAdam-family training carries material state: parameters, gradients, and two moment\nbuffers, often with higher-precision master weights. That cost is one reason optimizer\nstate sharding matters in large-model training.\n\n## Interview answer\n\n“Adam adapts updates with first and second gradient moments; AdamW applies decay\ndirectly to parameters. Warmup and decay control the time-dependent step size, while\nglobal-norm clipping is a guardrail against isolated explosive updates.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [Deep Learning with PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 735,
+      "y": 277
+    },
+    {
+      "id": "diffusion-model",
+      "title": "Diffusion Models",
+      "type": "concept",
+      "domains": [
+        "generative-models",
+        "multimodal"
+      ],
+      "aliases": [
+        "DDPM",
+        "denoising diffusion"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A diffusion model learns to reverse a gradual noising process, turning random noise into samples through repeated denoising steps.",
+      "body": "A diffusion model learns to reverse a gradual noising process, turning random noise\ninto samples through repeated denoising steps.\n\nThe forward process has fixed Gaussian transitions; the neural network predicts\nnoise, score, or a related parameterization for the reverse process. Stable Diffusion\noperates in a compressed VAE latent space and conditions a U-Net on text embeddings,\nreducing pixel-space cost. Diffusion offers stable training and high sample quality,\nbut iterative sampling is slower than a single autoregressive or GAN forward pass.\n\n## Source\n\n- [Diffusion Model](https://www.yuque.com/shakewin/woezs0/ppbpaxtvhppyvtse)",
+      "x": 286,
+      "y": 490
+    },
+    {
+      "id": "direct-preference-optimization",
+      "title": "Direct Preference Optimization",
+      "type": "concept",
+      "domains": [
+        "post-training",
+        "alignment"
+      ],
+      "aliases": [
+        "DPO"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "DPO trains directly on chosen/rejected response pairs, increasing their relative log-probability margin while regularizing against a reference policy.",
+      "body": "DPO trains directly on chosen/rejected response pairs, increasing their relative\nlog-probability margin while regularizing against a reference policy.\n\nIts derivation substitutes the KL-regularized optimal policy into a pairwise\nBradley–Terry preference model, causing the unknown reward normalizer to cancel. The\nresult needs neither online rollouts nor an explicit reward and value model. DPO is\nsimpler and stable, but remains limited by static preference coverage, label quality,\nreference choice, and sensitivity to the temperature-like $\\beta$ parameter.\n\n## Sources\n\n- [DPO](https://www.yuque.com/shakewin/woezs0/gway2i9nrspb9o7k)\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 701,
+      "y": 523
+    },
+    {
+      "id": "distributed-collectives",
+      "title": "Distributed Collective Operations",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "training"
+      ],
+      "aliases": [
+        "all-reduce",
+        "all-gather",
+        "reduce-scatter",
+        "all-to-all"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Collectives express how tensor shards move and combine across a process group. All-gather removes a shard dimension by giving every rank the full value; reduce-scatter sums replicas and leaves each rank one shard; all-reduce sums and replicates the result; all-to-all redistributes distinct pieces between every pair.",
+      "body": "Collectives express how tensor shards move and combine across a process group.\nAll-gather removes a shard dimension by giving every rank the full value;\nreduce-scatter sums replicas and leaves each rank one shard; all-reduce sums and\nreplicates the result; all-to-all redistributes distinct pieces between every pair.\n\nThe backward of all-gather is reduce-scatter because gradients from replicated uses\nmust sum back onto the owning shard. Conversely, the backward of reduce-scatter is\nall-gather. Ring all-reduce can be understood as reduce-scatter followed by\nall-gather, avoiding a central coordinator while moving predictable chunks between\nneighbors.\n\nParallelism strategies are largely choices about where these collectives occur.\nFSDP gathers parameters and reduce-scatters gradients; tensor parallelism reduces\npartial matrix products; expert parallelism uses all-to-all token routing. Their\ncost depends on message size, latency, bandwidth, topology, and overlap with compute.\n\n## Interview answer\n\n“All-gather assembles shards, reduce-scatter sums then shards, all-reduce sums and\nreplicates, and all-to-all redistributes unique pieces. A parallelism plan is useful\nonly when its saved memory or compute outweighs those communication costs.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)",
+      "x": 645,
+      "y": 572
+    },
+    {
+      "id": "distributed-systems-drills",
+      "title": "Distributed Training and MLOps Drills",
+      "type": "interview",
+      "domains": [
+        "distributed-systems",
+        "training",
+        "mlops"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "DP replicates models; FSDP shards state; TP splits layer tensors; PP splits layers; EP places routed experts. Compare what each saves and which collective it adds.",
+      "body": "## Compare DP, FSDP, TP, PP, and EP.\n\nDP replicates models; FSDP shards state; TP splits layer tensors; PP splits layers;\nEP places routed experts. Compare what each saves and which collective it adds.\n\n## Why can eight GPUs be slower than one?\n\nSmall workloads, PCIe topology, frequent collectives, pipeline bubbles, imbalance,\nand synchronization can exceed the saved computation.\n\n## BF16 versus FP16?\n\nBF16 has wider exponent range and is easier to train; FP16 has more mantissa precision\nbut often needs loss scaling. Kernel support determines realized benefit.\n\n## Mixed precision versus quantization?\n\nMixed precision usually preserves higher-precision master/accumulation paths during\ntraining. Quantization targets compact weight, activation, or cache representation,\noften for inference.\n\n## What belongs in a distributed smoke-test matrix?\n\nSingle CPU/GPU baselines, each parallel dimension, representative combinations,\nloss parity, memory, throughput, utilization, checkpoint recovery, and multi-node runs.\n\n## All-gather versus reduce-scatter?\n\nAll-gather assembles shards into a replicated value. Reduce-scatter sums replicated\npartial values and leaves each rank a shard; they are reverse-mode counterparts.\n\n## What does arithmetic intensity tell you?\n\nIt is useful FLOPs per byte moved. Comparing it with the accelerator's\ncompute-to-bandwidth ratio predicts whether a kernel is compute- or bandwidth-bound.\n\n## When does context parallelism help?\n\nWhen long-sequence activations or attention state exceed one device. It shards the\nsequence and exchanges K/V blocks, trading per-device memory for communication.",
+      "x": 340,
+      "y": 117
+    },
+    {
+      "id": "distributed-training-and-mlops",
+      "title": "Distributed Training and MLOps Map",
+      "type": "map",
+      "domains": [
+        "distributed-systems",
+        "training",
+        "mlops"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Distributed execution trades memory and compute capacity for communication and coordination.",
+      "body": "Distributed execution trades memory and compute capacity for communication and\ncoordination.\n\nBegin with the [GPU performance model](/garden/#gpu-performance-model),\n[compute and memory accounting](/garden/#llm-compute-and-memory-accounting),\nand [collective operations](/garden/#distributed-collectives). They explain\nwhether a proposed sharding strategy saves the resource that is actually limiting.\n\n[Data parallelism](/garden/#data-parallelism) replicates the model;\n[FSDP](/garden/#fully-sharded-data-parallelism) shards its state;\n[tensor parallelism](/garden/#tensor-parallelism) splits layer operations;\n[pipeline parallelism](/garden/#pipeline-parallelism) splits layers; and\n[expert parallelism](/garden/#expert-parallelism) distributes routed experts.\n[Context parallelism](/garden/#context-parallelism) splits long sequences.\nThese dimensions can be combined, but every extra dimension adds collectives,\nconfiguration, and failure modes.\n\n[Mixed precision](/garden/#mixed-precision-training) improves training execution,\nwhile [quantization](/garden/#model-quantization) targets compact computation or\nserving. [Evaluation](/garden/#llm-evaluation) closes the lifecycle: throughput\nor memory gains are useful only when quality remains acceptable.\n\nPractice with [distributed-systems drills](/garden/#distributed-systems-drills).",
+      "x": 573,
+      "y": 139
+    },
+    {
+      "id": "dynamic-sparse-attention",
+      "title": "Dynamic Sparse Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference",
+        "training"
+      ],
+      "aliases": [
+        "DSA"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "DSA uses a lightweight learned indexer to select the top-$k$ relevant cached positions before the main attention computation.",
+      "body": "DSA uses a lightweight learned indexer to select the top-$k$ relevant cached\npositions before the main attention computation.\n\nAfter dense warm-up, sparse training co-trains the indexer toward the main model's\nattention distribution while the main model attends only to selected entries. The\nmain attention work changes from $O(L^2)$ to approximately $O(Lk)$ in training and\nfrom reading $L$ cache rows to $k$ rows per decode query, plus the cheaper indexer\nscan. DeepSeek's implementation builds on MLA's absorbed decode representation.\n\nQuality depends on retrieval recall. An indexer that misses an important token saves\ncompute but irreversibly removes that evidence from the main attention calculation.\n\n## Interview answer\n\n“DSA learns a cheap indexer that retrieves top-k positions, then runs expensive\nattention only on them. It reduces long-context compute and cache reads, but turns\nretrieval recall into a model-quality risk.”\n\n## Sources\n\n- [DSA / CSA / HCA](https://www.yuque.com/shakewin/woezs0/kh0uap4zmflsimws)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 467,
+      "y": 510
+    },
+    {
+      "id": "encoder-decoder",
+      "title": "Encoder–Decoder Models",
+      "type": "concept",
+      "domains": [
+        "model-architecture"
+      ],
+      "aliases": [
+        "sequence-to-sequence",
+        "seq2seq"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "An encoder converts an input sequence into contextual states; a decoder generates an output sequence while attending to its own prefix and the encoder states.",
+      "body": "An encoder converts an input sequence into contextual states; a decoder generates\nan output sequence while attending to its own prefix and the encoder states.\n\nIn a Transformer, encoder self-attention is bidirectional, decoder self-attention is\ncausal, and cross-attention uses decoder queries with encoder keys and values. This\nfits translation and summarization where input and output lengths differ. Decoder-only\nmodels instead place instructions and source material in one causal context, gaining\na uniform interface at the cost of recomputing or caching that context.\n\n## Sources\n\n- [Attention is All You Need](https://www.yuque.com/shakewin/woezs0/wfnf4pb8yxth3i36)\n- [Deep Learning PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 437,
+      "y": 223
+    },
+    {
+      "id": "engram-conditional-memory",
+      "title": "Engram Conditional Memory",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "memory"
+      ],
+      "aliases": [
+        "Engram"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "Engram adds deterministic hashed n-gram lookup to a Transformer as a complementary sparsity axis to MoE's conditional computation.",
+      "body": "Engram adds deterministic hashed n-gram lookup to a Transformer as a complementary\nsparsity axis to MoE's conditional computation.\n\nTokenizer compression reduces redundant forms, multi-head hashing mitigates\ncollisions, and context-aware gating suppresses noisy retrieved embeddings. Because\nindices depend on input tokens rather than hidden-state routing, large tables can be\nsharded during training or offloaded to host memory during inference. The benefit is\ncheap factual-pattern lookup; risks include collisions, stale memorization, and\nsystem bottlenecks when table access is not hidden behind computation.\n\n## Source\n\n- [Engram](https://www.yuque.com/shakewin/woezs0/ef3x6lg83t6od3gi)",
+      "x": 651,
+      "y": 657
+    },
+    {
+      "id": "expert-parallelism",
+      "title": "Expert Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "inference",
+        "training"
+      ],
+      "aliases": [
+        "EP"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Expert parallelism places different MoE experts on different devices and routes token representations to the devices selected by the router.",
+      "body": "Expert parallelism places different MoE experts on different devices and routes\ntoken representations to the devices selected by the router.\n\nIt distributes expert parameters efficiently, but its all-to-all traffic is highly\nsensitive to routing skew and network topology. Expert tensor parallelism can shard\none expert further, trading memory for still more communication. A configuration\nmust be benchmarked as a whole: adding EP may lower memory while reducing tokens per\nsecond on machines without strong device-to-device links.\n\n## Interview answer\n\n“EP distributes experts across devices and exchanges tokens according to routing.\nIt fits larger MoE models, but load balance and all-to-all communication determine\nwhether it is actually faster.”\n\n## Sources\n\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 450,
+      "y": 720
+    },
+    {
+      "id": "flash-attention",
+      "title": "FlashAttention",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "training",
+        "systems"
+      ],
+      "aliases": [
+        "Flash Attention",
+        "IO-aware exact attention"
+      ],
+      "knowledgeBases": [
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "FlashAttention computes exact scaled dot-product attention in tiles sized for fast on-chip memory. Standard eager attention materializes the full score and probability matrices in high-bandwidth memory; repeatedly writing and reading those quadratic intermediates can cost more time than the arithmetic itself.",
+      "body": "FlashAttention computes exact scaled dot-product attention in tiles sized for fast\non-chip memory. Standard eager attention materializes the full score and probability\nmatrices in high-bandwidth memory; repeatedly writing and reading those quadratic\nintermediates can cost more time than the arithmetic itself.\n\nEach query tile streams through key/value tiles while maintaining a running maximum,\nsoftmax denominator, and weighted value accumulator. When a later tile contains a\nlarger maximum, previous partial sums are rescaled. This online-softmax invariant\nproduces the same mathematical result as dense attention without storing the full\n$N\\times N$ matrix.\n\nIt reduces attention activation memory from quadratic to linear in sequence length\nand improves speed by reducing memory traffic. It does not change dense attention's\nquadratic arithmetic complexity, and kernel eligibility still depends on hardware,\ndtype, head dimension, masking, and framework support.\n\n## Interview answer\n\n“FlashAttention is an exact IO-aware attention algorithm. It tiles Q, K, and V into\non-chip memory and uses online softmax, avoiding the quadratic score-matrix traffic;\nmemory falls to linear even though dense attention FLOPs remain quadratic.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 754,
+      "y": 326
+    },
+    {
+      "id": "foundations",
+      "title": "AI and ML Foundations Map",
+      "type": "map",
+      "domains": [
+        "foundations"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "This slice connects the assumptions beneath modern AI systems.",
+      "body": "This slice connects the assumptions beneath modern AI systems.\n\n## Learning path\n\n1. Ground the computation in [neural-network layers](/garden/#neural-network-computation),\n   [backpropagation](/garden/#backpropagation-and-autodiff), and\n   [deep-learning optimization](/garden/#deep-learning-optimization).\n2. Learn objectives with [probabilistic objectives](/garden/#probabilistic-objectives),\n   then connect the math to [numerical stability](/garden/#numerical-stability)\n   and why validation needs [generalization and regularization](/garden/#ml-generalization-and-regularization).\n3. Review [classical ML](/garden/#classical-ml-methods) and\n   sparse representations as practical baselines.\n4. Understand symbolic planning through [search and A*](/garden/#search-and-a-star)\n   and uncertainty through [Bayesian networks](/garden/#bayesian-networks).\n5. Move to sequential decisions with [reinforcement learning](/garden/#reinforcement-learning)\n   and [temporal-difference learning](/garden/#temporal-difference-learning).\n\nThe recurring question is: what assumptions make a method work? Independence,\nstationarity, representativeness, graph structure, reward quality, and evaluation\nprotocol are often more important than the model name.\n\nPractice with [foundations drills](/garden/#foundations-drills).",
+      "x": 236,
+      "y": 510
+    },
+    {
+      "id": "foundations-drills",
+      "title": "AI Foundations Drills",
+      "type": "interview",
+      "domains": [
+        "foundations"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "It is directional and generally $D_{KL}(P\\|Q)\\ne D_{KL}(Q\\|P)$; it also does not satisfy the triangle inequality. Explain its expected extra coding-cost intuition.",
+      "body": "## Why is KL divergence not a distance metric?\n\nIt is directional and generally $D_{KL}(P\\|Q)\\ne D_{KL}(Q\\|P)$; it also does not\nsatisfy the triangle inequality. Explain its expected extra coding-cost intuition.\n\n## When is A* optimal?\n\nWith nonnegative path costs and an admissible heuristic; consistency avoids reopening\nstates in common graph-search implementations.\n\n## Q-learning versus SARSA?\n\nQ-learning uses a greedy next-action target and is off-policy. SARSA uses the action\nactually selected and is on-policy.\n\n## Why can a validation score mislead?\n\nRepeated tuning leaks validation information; distribution shift, label leakage, and\nan unrepresentative split can also make the score fail to estimate deployment.\n\n## Why is a learned Bayesian graph not automatically causal?\n\nObservational independencies may identify only an equivalence class, and hidden\nconfounding or incorrect assumptions can produce the same distribution.\n\n## Why do gradients sum at a computation-graph branch?\n\nThe shared value influences the loss through every downstream path, so the\nmultivariable chain rule adds each path's contribution. This is also why gradients\nfrom replicated distributed uses must reduce back to the owner.\n\n## Adam versus AdamW?\n\nAdam normalizes with running first and second moments. AdamW applies weight decay\ndirectly to parameters instead of mixing an L2 term into the adaptive gradient.\n\n## Why subtract the maximum before softmax?\n\nSoftmax is invariant to a common shift. Subtracting the largest logit makes every\nexponent at most one, avoiding overflow without changing the distribution.",
+      "x": 123,
+      "y": 453
+    },
+    {
+      "id": "fully-sharded-data-parallelism",
+      "title": "Fully Sharded Data Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "training"
+      ],
+      "aliases": [
+        "FSDP",
+        "ZeRO"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "FSDP shards parameters, gradients, and optimizer state across data-parallel workers, materializing layer parameters only when needed.",
+      "body": "FSDP shards parameters, gradients, and optimizer state across data-parallel workers,\nmaterializing layer parameters only when needed.\n\nIt reduces per-device memory enough to train much larger models while preserving the\ndata-parallel programming model. The cost is repeated all-gather and reduce-scatter,\nplus careful wrapping, checkpointing, mixed precision, and overlap. FSDP shards model\nstate over time; tensor parallelism splits the computation inside each layer.\n\n## Source\n\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 730,
+      "y": 555
+    },
+    {
+      "id": "generalized-advantage-estimation",
+      "title": "Generalized Advantage Estimation",
+      "type": "concept",
+      "domains": [
+        "reinforcement-learning",
+        "post-training"
+      ],
+      "aliases": [
+        "GAE"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "GAE combines multi-step temporal-difference residuals to estimate how much better an action was than the value baseline predicted.",
+      "body": "GAE combines multi-step temporal-difference residuals to estimate how much better an\naction was than the value baseline predicted.\n\nThe parameter $\\lambda$ interpolates between low-variance, biased one-step TD and\nhigh-variance, lower-bias Monte Carlo returns. Discount $\\gamma$ controls planning\nhorizon. GAE improves policy-gradient stability, but it inherits value-model error\nand requires correct episode boundaries and masking; a bootstrapped terminal state\ncan systematically corrupt training.\n\n## Sources\n\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)",
+      "x": 920,
+      "y": 554
+    },
+    {
+      "id": "generative-adversarial-network",
+      "title": "Generative Adversarial Networks",
+      "type": "concept",
+      "domains": [
+        "generative-models"
+      ],
+      "aliases": [
+        "GAN"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A GAN trains a generator to fool a discriminator while the discriminator learns to separate real from generated samples.",
+      "body": "A GAN trains a generator to fool a discriminator while the discriminator learns to\nseparate real from generated samples.\n\nAdversarial learning can produce sharp samples without an explicit likelihood, but\nthe coupled game is unstable and may collapse to limited modes. Balance between the\ntwo networks, objective choice, normalization, and evaluation all matter. VAEs offer\na structured latent likelihood objective but often blur; diffusion models trade many\ndenoising steps for stable high-quality generation.\n\n## Source\n\n- [MLi Paper Reading](https://www.yuque.com/shakewin/woezs0/hhoofowylkt3t2id)",
+      "x": 289,
+      "y": 417
+    },
+    {
+      "id": "gpu-performance-model",
+      "title": "GPU Performance Model for LLMs",
+      "type": "concept",
+      "domains": [
+        "systems",
+        "training",
+        "inference"
+      ],
+      "aliases": [
+        "roofline model",
+        "arithmetic intensity",
+        "model FLOP utilization",
+        "MFU"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Accelerator performance is bounded either by arithmetic throughput or by moving bytes through the memory hierarchy. High-bandwidth memory is large but distant from the compute units; registers and on-chip SRAM are far smaller and faster. Arithmetic intensity—FLOPs performed per byte moved—predicts which resource is limiting under the roofline model.",
+      "body": "Accelerator performance is bounded either by arithmetic throughput or by moving\nbytes through the memory hierarchy. High-bandwidth memory is large but distant from\nthe compute units; registers and on-chip SRAM are far smaller and faster. Arithmetic\nintensity—FLOPs performed per byte moved—predicts which resource is limiting under\nthe roofline model.\n\nLarge, well-shaped matrix multiplications can approach the compute roof because\nloaded operands are reused. Autoregressive decode at small batch sizes often streams\nmany parameter and KV-cache bytes for comparatively little work, making bandwidth\nthe roof. Kernel fusion, batching, quantization, and cache-aware algorithms help by\nincreasing reuse or reducing traffic.\n\nModel FLOP utilization compares achieved model FLOPs per second with hardware peak.\nIt is useful only with a consistent FLOP convention and should be read alongside\ntokens per second, latency, memory usage, and communication overhead.\n\n## Interview answer\n\n“The roofline model compares arithmetic intensity with the GPU's compute-to-bandwidth\nratio. Training matmuls are often compute-friendly, while small-batch decode is\nfrequently bandwidth-bound; the optimization target is therefore bytes moved, not\njust FLOPs.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)",
+      "x": 806,
+      "y": 424
+    },
+    {
+      "id": "graph-neural-network",
+      "title": "Graph Neural Networks",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "graph-ml"
+      ],
+      "aliases": [
+        "GNN",
+        "GCN"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A GNN updates each node by aggregating messages from its neighbors, allowing learned representations to reflect graph structure and node or edge features.",
+      "body": "A GNN updates each node by aggregating messages from its neighbors, allowing learned\nrepresentations to reflect graph structure and node or edge features.\n\nMessage passing is permutation-invariant over neighbors and can support node,\nedge, or graph prediction. More layers expand the receptive field but can cause\nover-smoothing, over-squashing, and expensive neighborhood expansion. Unlike a\nTransformer's dense content-based connectivity, a basic GNN begins from an explicit\ngraph; hybrid graph Transformers can learn additional long-range interactions.\n\n## Source\n\n- [MLi Paper Reading](https://www.yuque.com/shakewin/woezs0/hhoofowylkt3t2id)",
+      "x": 398,
+      "y": 285
+    },
+    {
+      "id": "greedy-equivalence-search",
+      "title": "Greedy Equivalence Search",
+      "type": "concept",
+      "domains": [
+        "causal-ml"
+      ],
+      "aliases": [
+        "GES"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "GES is a score-based causal structure learner that greedily adds edges while a decomposable score improves, then greedily removes edges for further improvement.",
+      "body": "GES is a score-based causal structure learner that greedily adds edges while a\ndecomposable score improves, then greedily removes edges for further improvement.\n\nIt searches equivalence classes rather than treating every DAG independently. BIC\nbalances log-likelihood fit with a penalty for parameter count, discouraging dense\noverfit graphs. Greedy search is scalable but can stop at a local optimum; the score's\nassumptions and hidden confounding still limit causal interpretation.\n\n## Source\n\n- [Causal Structure Learning](https://www.yuque.com/shakewin/woezs0/zbne4d5yhpdwnasv)",
+      "x": 663,
+      "y": 214
+    },
+    {
+      "id": "group-relative-policy-optimization",
+      "title": "Group Relative Policy Optimization",
+      "type": "concept",
+      "domains": [
+        "post-training",
+        "reinforcement-learning"
+      ],
+      "aliases": [
+        "GRPO"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "GRPO estimates advantage by comparing rewards among several responses sampled for the same prompt, removing PPO's separately trained value model.",
+      "body": "GRPO estimates advantage by comparing rewards among several responses sampled for\nthe same prompt, removing PPO's separately trained value model.\n\nGroup normalization supplies a relative baseline; a clipped policy objective and KL\ncontrol limit drift. Verifiable rule-based rewards work particularly well for math\nor code, but group quality depends on sample diversity and reward resolution. Nearly\nidentical rewards give a weak signal, while noisy rewards can rank the group\nincorrectly. GRPO reduces model count, not the cost of generating multiple rollouts.\n\n## Sources\n\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 754,
+      "y": 617
+    },
+    {
+      "id": "grouped-query-attention",
+      "title": "Grouped-Query Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "GQA",
+        "grouped multi-query attention"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "GQA partitions query heads into groups whose members share a key/value head, giving a tunable middle ground between MHA quality and MQA cache efficiency.",
+      "body": "GQA partitions query heads into groups whose members share a key/value head, giving\na tunable middle ground between MHA quality and MQA cache efficiency.\n\nFewer KV heads mean a proportionally smaller cache and less decode-time bandwidth.\nMore groups retain greater K/V diversity. The chosen group count is therefore a\nmodel-quality versus serving-cost decision, not merely a kernel option.\n\n## Interview answer\n\n“GQA shares K/V heads within groups of query heads. It preserves more diversity\nthan MQA while reducing KV-cache memory compared with full MHA.”\n\n## Sources\n\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [MLA](https://www.yuque.com/shakewin/woezs0/fz9zd2ttsiywlelx)",
+      "x": 328,
+      "y": 355
+    },
+    {
+      "id": "kv-cache",
+      "title": "KV Cache",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "transformer"
+      ],
+      "aliases": [
+        "key-value cache",
+        "attention cache"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "A KV cache stores each layer's prior key and value tensors so autoregressive decode computes projections only for the new token instead of recomputing the full prefix.",
+      "body": "A KV cache stores each layer's prior key and value tensors so autoregressive decode\ncomputes projections only for the new token instead of recomputing the full prefix.\n\nFor a simplified dense layout, storage grows with batch size, layers, sequence\nlength, KV-head count, head dimension, and bytes per element. Decode trades compute\nfor state: one new query attends over an ever-growing cache. Long contexts and large\nbatches therefore make capacity, memory bandwidth, fragmentation, and eviction\ncentral systems concerns.\n\nMQA/GQA reduce the number of KV heads, MLA stores a compressed latent, quantization\nreduces bytes, and paged layouts manage allocation. A stale or wrongly indexed\ncache silently changes model output.\n\n## Interview answer\n\n“The KV cache removes repeated K/V projection work for the prefix. It speeds decode\nbut introduces memory growth and bandwidth pressure, so attention architecture and\ncache management determine serving capacity.”\n\n## Sources\n\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [Prompt Caching and Prefix Cache](https://www.yuque.com/shakewin/sysgq3/fddexv7e29h99vrl)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 486,
+      "y": 443
+    },
+    {
+      "id": "llm-compute-and-memory-accounting",
+      "title": "LLM Compute and Memory Accounting",
+      "type": "concept",
+      "domains": [
+        "systems",
+        "training",
+        "inference"
+      ],
+      "aliases": [
+        "LLM FLOP accounting",
+        "training memory accounting",
+        "inference memory accounting"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "LLM capacity planning separates parameters, optimizer state, gradients, activations, and persistent inference state. Training retains or recomputes activations for backpropagation and often keeps higher-precision master weights plus Adam moments. Inference drops optimizer and gradient state but adds a KV cache that grows with batch size, context length, layers, KV heads, head dimension, and element width.",
+      "body": "LLM capacity planning separates parameters, optimizer state, gradients, activations,\nand persistent inference state. Training retains or recomputes activations for\nbackpropagation and often keeps higher-precision master weights plus Adam moments.\nInference drops optimizer and gradient state but adds a KV cache that grows with\nbatch size, context length, layers, KV heads, head dimension, and element width.\n\nFor dense Transformers, projection and FFN work scales roughly with tokens times\nparameter count, while attention adds a sequence-dependent term. The common\n$6\\times\\text{tokens}\\times\\text{parameters}$ training estimate combines a dense\nforward pass with two comparable backward matrix multiplications; it is a useful\napproximation, not a replacement for architecture-specific accounting.\n\nPeak memory, not just totals, determines whether an execution fits. FlashAttention,\nactivation checkpointing, GQA/MLA, sharding, and reduced precision each remove a\ndifferent term, so their savings should not be added blindly.\n\n## Interview answer\n\n“Training memory is weights plus gradients, optimizer state, and saved activations;\ninference is weights plus KV cache and peak activations. FLOPs are dominated by\ndense projections at ordinary context lengths, while attention and memory movement\nbecome decisive as sequence length and batch size grow.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)",
+      "x": 664,
+      "y": 357
+    },
+    {
+      "id": "llm-evaluation",
+      "title": "LLM Evaluation",
+      "type": "concept",
+      "domains": [
+        "evaluation",
+        "ai-engineering"
+      ],
+      "aliases": [
+        "LLM evals"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "LLM evaluation measures capability, reliability, safety, latency, and cost with a mixture of automated tests and human judgment.",
+      "body": "LLM evaluation measures capability, reliability, safety, latency, and cost with a\nmixture of automated tests and human judgment.\n\nTraining-data contamination can invalidate benchmarks, and one aggregate score hides\nimportant slices. RAG requires separate retrieval and grounded-answer metrics; agents\nneed task completion, tool correctness, side-effect, and recovery checks. Pairwise\npreference is useful for open-ended quality but inherits judge bias. A good evaluation\nsuite is versioned, reproducible, resistant to leakage, and tied to deployment\ndecisions rather than leaderboard optimization.\n\n## Sources\n\n- [NVIDIA Agentic AI Training](https://www.yuque.com/shakewin/fidaqi/fgv15n9m42qh9m77)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)",
+      "x": 471,
+      "y": 368
+    },
+    {
+      "id": "manifold-constrained-hyper-connections",
+      "title": "Manifold-Constrained Hyper-Connections",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "distributed-systems"
+      ],
+      "aliases": [
+        "mHC",
+        "hyper-connections"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "mHC generalizes one residual stream into multiple streams connected by learned pre-, post-, and residual mixing matrices, while constraining the mixing to improve training stability.",
+      "body": "mHC generalizes one residual stream into multiple streams connected by learned\npre-, post-, and residual mixing matrices, while constraining the mixing to improve\ntraining stability.\n\nThe manifold constraint maps residual mixing toward doubly stochastic structure so\nsignals do not grow or collapse arbitrarily. Multiple streams increase activation,\nI/O, and pipeline communication, so the design also depends on fused kernels and\noverlap-aware scheduling. It illustrates a recurring lesson: an architectural gain\nmust be co-designed with memory movement and distributed execution.\n\n## Source\n\n- [mHC](https://www.yuque.com/shakewin/woezs0/qcd8g69ec9wrft2a)",
+      "x": 712,
+      "y": 708
+    },
+    {
+      "id": "masked-language-modeling",
+      "title": "Masked Language Modeling",
+      "type": "concept",
+      "domains": [
+        "pretraining",
+        "model-architecture"
+      ],
+      "aliases": [
+        "MLM"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "Masked-language modeling corrupts selected input tokens and trains an encoder to recover them using context on both sides.",
+      "body": "Masked-language modeling corrupts selected input tokens and trains an encoder to\nrecover them using context on both sides.\n\nThe objective learns contextual representations suited to understanding tasks, but\npretraining sees artificial mask tokens that downstream inputs usually lack. Masking\ntoo little wastes context; masking too much removes the evidence required for\nreconstruction. MLM differs from causal language modeling, which predicts each next\ntoken using only the left prefix and aligns directly with autoregressive generation.\n\n## Sources\n\n- [BERT](https://www.yuque.com/shakewin/woezs0/havcwgm88z0449od)\n- [Deep Learning PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 397,
+      "y": 502
+    },
+    {
+      "id": "mixed-precision-training",
+      "title": "Mixed-Precision Training",
+      "type": "concept",
+      "domains": [
+        "training",
+        "systems"
+      ],
+      "aliases": [
+        "BF16 training",
+        "FP16 training"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Mixed-precision training uses low-precision tensors for expensive operations while retaining higher precision where accumulation or updates need stability.",
+      "body": "Mixed-precision training uses low-precision tensors for expensive operations while\nretaining higher precision where accumulation or updates need stability.\n\nBF16 keeps FP32-like exponent range with fewer mantissa bits; FP16 offers more\nmantissa precision but a narrower range and often needs loss scaling. FP8 can improve\nthroughput further with stricter scaling and kernel requirements. This is primarily\na training execution strategy; quantization usually targets a compact stored or\nserved model. Numeric overflow, underflow, and reduction error require monitoring.\n\n## Sources\n\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 760,
+      "y": 195
+    },
+    {
+      "id": "mixture-of-experts",
+      "title": "Mixture of Experts",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "training",
+        "inference"
+      ],
+      "aliases": [
+        "MoE",
+        "sparse MoE"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering"
+      ],
+      "summary": "Sparse MoE replaces a dense FFN with many expert FFNs while routing each token to only a small subset, increasing total parameters without proportional active compute.",
+      "body": "Sparse MoE replaces a dense FFN with many expert FFNs while routing each token to\nonly a small subset, increasing total parameters without proportional active compute.\n\nRouting creates systems costs: tokens must be exchanged to expert-owning devices,\ncapacity can become imbalanced, and communication may dominate on weak interconnects.\nTraining must prevent expert collapse or chronic overload. “Tokens per active\nparameter” and end-to-end throughput are more useful than total parameter count\nalone when comparing deployments.\n\n## Interview answer\n\n“Sparse MoE scales parameter capacity by activating top-k experts per token. The\ncompute can stay bounded, but routing balance and all-to-all communication become\nfirst-class bottlenecks.”\n\n## Sources\n\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)",
+      "x": 523,
+      "y": 679
+    },
+    {
+      "id": "ml-generalization-and-regularization",
+      "title": "ML Generalization and Regularization",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "training"
+      ],
+      "aliases": [
+        "bias-variance tradeoff",
+        "weight decay"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "Generalization is performance on unseen data rather than optimization of the training set. Underfitting reflects excessive bias; overfitting reflects excessive variance or memorization of noise.",
+      "body": "Generalization is performance on unseen data rather than optimization of the\ntraining set. Underfitting reflects excessive bias; overfitting reflects excessive\nvariance or memorization of noise.\n\nControls include representative validation splits, early stopping, data augmentation,\ncapacity limits, dropout, and penalties on weights. L2 regularization adds\n$\\lambda\\lVert w\\rVert_2^2$ to the objective; in simple SGD this resembles multiplying\nweights by a decay factor before the gradient step. With adaptive optimizers,\ndecoupled weight decay is not identical to adding an L2 gradient term.\n\nThe main failure mode is tuning repeatedly against the test set, which turns it\ninto another training signal and makes the final estimate optimistic.\n\n## Sources\n\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)\n- [Deep Learning PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)",
+      "x": 606,
+      "y": 216
+    },
+    {
+      "id": "model-quantization",
+      "title": "Model Quantization",
+      "type": "concept",
+      "domains": [
+        "model-compression",
+        "inference",
+        "training"
+      ],
+      "aliases": [
+        "INT8",
+        "FP8",
+        "low-precision inference"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Quantization represents weights, activations, or cache values with fewer bits to reduce memory, bandwidth, and sometimes compute cost.",
+      "body": "Quantization represents weights, activations, or cache values with fewer bits to\nreduce memory, bandwidth, and sometimes compute cost.\n\nPost-training quantization calibrates an existing model; quantization-aware training\nadapts parameters to simulated low precision. Per-channel scales handle outliers\nbetter than one global scale, while weights, activations, and KV cache have different\nerror sensitivity. A smaller representation helps only when the target hardware has\nefficient kernels and conversion overhead does not dominate.\n\n## Sources\n\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [NVIDIA Agentic AI Training](https://www.yuque.com/shakewin/fidaqi/fgv15n9m42qh9m77)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 804,
+      "y": 268
+    },
+    {
+      "id": "multi-head-latent-attention",
+      "title": "Multi-Head Latent Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "MLA"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "MLA jointly compresses keys and values into a low-rank latent cache, then performs attention in a form that preserves multi-head expressiveness while moving less decode-time state.",
+      "body": "MLA jointly compresses keys and values into a low-rank latent cache, then performs\nattention in a form that preserves multi-head expressiveness while moving less\ndecode-time state.\n\nThe key systems idea is weight absorption: matrix multiplication can be regrouped\nso the large up-projected K/V tensors need not be materialized during one-token\ndecode. Decoupled RoPE keeps positional components separate so that regrouping\nremains valid. Implementations may use an MHA-like path for training/prefill and an\nabsorbed MQA-like path for decode.\n\nThe design adds architectural and kernel complexity. Compression rank, positional\nhandling, and the selected execution mode must agree or the theoretical cache\nsaving will not translate into real throughput.\n\n## Interview answer\n\n“MLA caches a learned low-rank K/V latent. Weight absorption avoids reconstructing\nlarge K/V tensors during decode, while decoupled RoPE preserves valid positional\nattention.”\n\n## Sources\n\n- [MLA](https://www.yuque.com/shakewin/woezs0/fz9zd2ttsiywlelx)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 419,
+      "y": 407
+    },
+    {
+      "id": "multi-query-attention",
+      "title": "Multi-Query Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "MQA"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "MQA keeps multiple query heads but shares a single key head and value head across them, sharply reducing KV-cache size and decode-time memory traffic.",
+      "body": "MQA keeps multiple query heads but shares a single key head and value head across\nthem, sharply reducing KV-cache size and decode-time memory traffic.\n\nThe efficiency gain comes from moving fewer cached bytes per token. The tradeoff is\nreduced KV-head diversity, which can cost quality relative to full multi-head\nattention. It is the low-memory endpoint of the MHA→GQA→MQA family; MLA pursues a\ndifferent compression route with a learned latent representation.\n\n## Interview answer\n\n“MQA shares one K/V head across many query heads. That reduces cache capacity and\nbandwidth, but sacrifices some representational diversity.”\n\n## Sources\n\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [MLA](https://www.yuque.com/shakewin/woezs0/fz9zd2ttsiywlelx)",
+      "x": 400,
+      "y": 340
+    },
+    {
+      "id": "multi-token-prediction",
+      "title": "Multi-Token Prediction",
+      "type": "concept",
+      "domains": [
+        "training",
+        "inference"
+      ],
+      "aliases": [
+        "MTP"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "MTP adds auxiliary prediction modules so training supervises multiple future-token offsets rather than only the immediate next token.",
+      "body": "MTP adds auxiliary prediction modules so training supervises multiple future-token\noffsets rather than only the immediate next token.\n\nThe extra heads supply denser training signal and encourage representations useful\nbeyond one-step prediction. A serving design may discard auxiliary heads and keep\nonly the improved main model, or reuse suitable heads as a draft mechanism for\nspeculative decoding. These are distinct benefits: multi-token training does not by\nitself make base autoregressive decode emit several committed tokens at once.\n\nShared embeddings and hidden features, loss weighting, and inference integration\ndetermine whether the additional training cost produces real quality or latency\nbenefit.\n\n## Interview answer\n\n“MTP supervises several future offsets during training. It densifies the learning\nsignal and can supply speculative drafts, but accepted generation still needs a\ncorrect verification path.”\n\n## Sources\n\n- [MTP](https://www.yuque.com/shakewin/woezs0/xsgrva9gef5pwz5n)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 592,
+      "y": 613
+    },
+    {
+      "id": "neural-network-computation",
+      "title": "Neural Network Computation",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "model-architecture"
+      ],
+      "aliases": [
+        "multi-layer perceptron",
+        "MLP",
+        "feed-forward neural network"
+      ],
+      "knowledgeBases": [
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "A neural-network layer applies an affine transformation followed by a nonlinear function. For a batch stored by rows, $H=f(XW+b)$ maps $X\\in\\mathbb{R}^{B\\times d_{in}}$ through $W\\in\\mathbb{R}^{d_{in}\\times d_{out}}$; the bias is broadcast across examples.",
+      "body": "A neural-network layer applies an affine transformation followed by a nonlinear\nfunction. For a batch stored by rows, $H=f(XW+b)$ maps\n$X\\in\\mathbb{R}^{B\\times d_{in}}$ through\n$W\\in\\mathbb{R}^{d_{in}\\times d_{out}}$; the bias is broadcast across examples.\n\nStacked linear maps without nonlinearities collapse into one linear map. Activation\nfunctions therefore provide the representational gain from depth. ReLU is cheap but\ncan create permanently inactive units; sigmoid and tanh saturate; gated activations\nsuch as SwiGLU let one projection modulate another.\n\nShape reasoning is as important as the equation. Frameworks may store weights\ntransposed relative to mathematical notation, while the batch dimension is preserved\nfor activation gradients and reduced when accumulating gradients for shared weights.\n\n## Interview answer\n\n“An MLP alternates affine maps with nonlinearities. Batching turns neuron-wise dot\nproducts into matrix multiplication; during backpropagation, activation gradients\nretain the batch axis while gradients of shared parameters sum over it.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Deep Learning with PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 460,
+      "y": 282
+    },
+    {
+      "id": "numerical-stability",
+      "title": "Numerical Stability in Neural Networks",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "training",
+        "systems"
+      ],
+      "aliases": [
+        "log-sum-exp trick",
+        "stable softmax",
+        "online softmax"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Mathematically equivalent expressions can behave very differently in finite precision. Exponentials overflow for large logits, tiny probabilities underflow, and reductions can lose small contributions when scales differ greatly.",
+      "body": "Mathematically equivalent expressions can behave very differently in finite\nprecision. Exponentials overflow for large logits, tiny probabilities underflow,\nand reductions can lose small contributions when scales differ greatly.\n\nStable softmax subtracts the maximum logit because softmax is invariant to a common\nshift. Log-softmax uses $x_i-\\operatorname{logsumexp}(x)$ so it never materializes a\nnear-zero probability before taking its logarithm. Online softmax carries a running\nmaximum and rescales the accumulated denominator whenever that maximum changes,\nwhich makes tiled exact attention possible.\n\nPrecision policy is operation-specific: matrix multiplication tolerates reduced\nprecision better than exponentials, normalization, or long reductions. Stability\nbugs often produce plausible tensor shapes but NaNs, silent saturation, or divergent\ntraining.\n\n## Interview answer\n\n“Subtracting the maximum makes softmax and log-sum-exp stable without changing their\nvalues. Online softmax extends the same invariant to streamed tiles, rescaling prior\npartial sums when a new maximum appears.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)",
+      "x": 660,
+      "y": 290
+    },
+    {
+      "id": "paged-attention",
+      "title": "Paged Attention",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "serving"
+      ],
+      "aliases": [
+        "PagedAttention"
+      ],
+      "knowledgeBases": [
+        "Engineering"
+      ],
+      "summary": "Paged attention manages KV state in fixed-size blocks rather than requiring one contiguous allocation per sequence, reducing fragmentation and enabling flexible sharing and eviction.",
+      "body": "Paged attention manages KV state in fixed-size blocks rather than requiring one\ncontiguous allocation per sequence, reducing fragmentation and enabling flexible\nsharing and eviction.\n\nFor automatic prefix caching, a block can be addressed by a hash incorporating all\ntokens up to that block. Matching blocks are reused, so shared prefixes need not\nend at a whole request boundary. Smaller blocks improve granularity but add metadata\nand lookup overhead; larger blocks can waste capacity at sequence tails.\n\n## Interview answer\n\n“Paged attention brings virtual-memory-style blocks to the KV cache. It reduces\nfragmentation and enables block-level prefix reuse, at the cost of indirection and\nblock-management overhead.”\n\n## Source\n\n- [Prompt Caching and Prefix Cache](https://www.yuque.com/shakewin/sysgq3/fddexv7e29h99vrl)",
+      "x": 405,
+      "y": 543
+    },
+    {
+      "id": "pc-algorithm",
+      "title": "PC Algorithm",
+      "type": "concept",
+      "domains": [
+        "causal-ml"
+      ],
+      "aliases": [
+        "Peter-Clark algorithm"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "PC is a constraint-based causal-discovery algorithm that starts from a dense undirected graph, removes edges when conditional independence is found, identifies unshielded colliders, and applies orientation rules without creating contradictions.",
+      "body": "PC is a constraint-based causal-discovery algorithm that starts from a dense\nundirected graph, removes edges when conditional independence is found, identifies\nunshielded colliders, and applies orientation rules without creating contradictions.\n\nIts result is generally a partially directed equivalence class. Accuracy depends\nstrongly on sample size, significance thresholds, conditioning-set growth, and the\nchosen test—Fisher Z for linear Gaussian relationships, chi-square or G-tests for\ncategorical variables, or kernel tests for nonlinear dependence. Errors early in\nskeleton discovery propagate into edge orientations.\n\n## Source\n\n- [Causal Structure Learning](https://www.yuque.com/shakewin/woezs0/zbne4d5yhpdwnasv)",
+      "x": 525,
+      "y": 152
+    },
+    {
+      "id": "pipeline-parallelism",
+      "title": "Pipeline Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "training"
+      ],
+      "aliases": [
+        "PP"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Pipeline parallelism assigns consecutive layer stages to different devices and streams microbatches through them.",
+      "body": "Pipeline parallelism assigns consecutive layer stages to different devices and\nstreams microbatches through them.\n\nIt fits deep models without splitting every matrix, but idle “bubbles,” activation\ntransfers, and stage imbalance reduce utilization. More microbatches shrink the\nbubble but increase scheduling and memory pressure. Multi-stream architectures such\nas mHC enlarge stage communication, motivating fused kernels and schedules that\noverlap transfers with computation.\n\n## Sources\n\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [mHC](https://www.yuque.com/shakewin/woezs0/qcd8g69ec9wrft2a)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 816,
+      "y": 612
+    },
+    {
+      "id": "policy-gradient",
+      "title": "Policy Gradient",
+      "type": "concept",
+      "domains": [
+        "reinforcement-learning",
+        "post-training"
+      ],
+      "aliases": [
+        "REINFORCE"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Policy-gradient methods optimize expected return directly by increasing the log probability of sampled actions in proportion to their estimated advantage.",
+      "body": "Policy-gradient methods optimize expected return directly by increasing the log\nprobability of sampled actions in proportion to their estimated advantage.\n\nThe score-function estimator is unbiased but high variance. Reward-to-go removes\nirrelevant past rewards; a value baseline reduces variance without changing the\nexpectation; entropy bonuses preserve exploration. In language models, actions are\ntokens and a trajectory is a completion. Long sequences, expensive sampling, and\nsparse sequence-level rewards make credit assignment difficult.\n\n## Sources\n\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 716,
+      "y": 588
+    },
+    {
+      "id": "post-training-drills",
+      "title": "Post-Training and Alignment Drills",
+      "type": "interview",
+      "domains": [
+        "post-training",
+        "alignment"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "SFT establishes instruction-following behavior and a reasonable rollout distribution; preference methods then refine relative quality instead of discovering the interface from sparse rewards.",
+      "body": "## Why start with SFT before preference optimization?\n\nSFT establishes instruction-following behavior and a reasonable rollout distribution;\npreference methods then refine relative quality instead of discovering the interface\nfrom sparse rewards.\n\n## How does DPO remove the reward model?\n\nSubstituting the KL-regularized optimal policy into the pairwise preference model\ncancels the unknown normalization term and yields a chosen/rejected log-ratio loss.\n\n## What does GRPO remove relative to PPO?\n\nIt replaces the learned value baseline with reward normalization across a group of\nresponses to the same prompt. It still needs rollout generation and reward signals.\n\n## What is reward hacking?\n\nThe policy exploits flaws in the reward proxy rather than satisfying the intended\nbehavior. Independent human evaluation and adversarial tests are required.\n\n## Can visible chain-of-thought be trusted as an explanation?\n\nNo. It can improve task solving but may rationalize rather than faithfully describe\ninternal computation; verify critical steps and the answer.",
+      "x": 937,
+      "y": 143
+    },
+    {
+      "id": "probabilistic-objectives",
+      "title": "Probabilistic Objectives",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "training"
+      ],
+      "aliases": [
+        "maximum likelihood estimation",
+        "MLE",
+        "KL divergence"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Maximum likelihood chooses parameters that make observed data probable. Taking logs turns products over conditionally independent examples into sums, and minimizing negative log-likelihood yields familiar losses such as cross-entropy.",
+      "body": "Maximum likelihood chooses parameters that make observed data probable. Taking logs\nturns products over conditionally independent examples into sums, and minimizing\nnegative log-likelihood yields familiar losses such as cross-entropy.\n\nKL divergence $D_{KL}(P\\|Q)=\\mathbb{E}_P[\\log P-\\log Q]$ measures the extra coding\ncost of representing samples from $P$ with $Q$. It is directional, not a metric.\nKL appears in variational inference, distillation, and policy regularization.\n\nBoth tools inherit assumptions: a misspecified likelihood gives confident but wrong\nparameters, and the direction of KL determines whether optimization tends to cover\nmultiple modes or concentrate on one.\n\n## Sources\n\n- [Knowledge Puzzle](https://www.yuque.com/shakewin/woezs0/fvhczuilmmhpf6t4)\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 582,
+      "y": 445
+    },
+    {
+      "id": "prompt-caching",
+      "title": "Prompt Caching",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "serving"
+      ],
+      "aliases": [
+        "prefix caching",
+        "prefix cache"
+      ],
+      "knowledgeBases": [
+        "Engineering"
+      ],
+      "summary": "Prompt caching reuses prefill work when requests share an identical token prefix, avoiding repeated computation and KV materialization for that prefix.",
+      "body": "Prompt caching reuses prefill work when requests share an identical token prefix,\navoiding repeated computation and KV materialization for that prefix.\n\nThe cache key must reflect the exact token sequence, model, and relevant execution\nconfiguration. Stable serialization and placing invariant instructions early in\nthe prompt improve hit rate; timestamps, request IDs, or non-deterministic JSON near\nthe front destroy reuse. Paged block hashes and radix trees support partial prefix\nsharing with different allocation and lookup tradeoffs.\n\nOperational risks include stale entries, tenant data leakage, false sharing from an\nunderspecified key, and memory pressure from weak eviction policy.\n\n## Interview answer\n\n“Prompt caching reuses prefill KV state for identical prefixes. It saves first-token\nlatency and compute only when prompts are serialized deterministically and cache\nkeys isolate model, version, and tenant-sensitive state.”\n\n## Source\n\n- [Prompt Caching and Prefix Cache](https://www.yuque.com/shakewin/sysgq3/fddexv7e29h99vrl)",
+      "x": 331,
+      "y": 476
+    },
+    {
+      "id": "proximal-policy-optimization",
+      "title": "Proximal Policy Optimization",
+      "type": "concept",
+      "domains": [
+        "reinforcement-learning",
+        "post-training"
+      ],
+      "aliases": [
+        "PPO"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "PPO reuses on-policy samples for several gradient steps while clipping the policy probability ratio so updates do not move too far at once.",
+      "body": "PPO reuses on-policy samples for several gradient steps while clipping the policy\nprobability ratio so updates do not move too far at once.\n\nAn actor generates responses, a reward signal scores them, a critic estimates value,\nand a frozen reference policy supplies a KL penalty. This flexibility supports\narbitrary rewards, but the multi-model pipeline is expensive and sensitive to reward\nscale, advantage estimation, clipping, KL control, and stale trajectories.\n\n## Interview answer\n\n“PPO is a clipped policy-gradient method. In RLHF it is flexible but operationally\nheavy because rollout, reward, value, and reference models must remain coordinated.”\n\n## Sources\n\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 820,
+      "y": 560
+    },
+    {
+      "id": "radix-attention",
+      "title": "Radix Attention",
+      "type": "concept",
+      "domains": [
+        "inference",
+        "serving"
+      ],
+      "aliases": [
+        "RadixAttention"
+      ],
+      "knowledgeBases": [
+        "Engineering"
+      ],
+      "summary": "Radix attention organizes cached prefixes in a radix tree whose branches mirror shared and diverging token sequences.",
+      "body": "Radix attention organizes cached prefixes in a radix tree whose branches mirror\nshared and diverging token sequences.\n\nIt naturally represents many conversations that share a system prompt and then\nbranch. Longest-prefix lookup finds reusable KV state; eviction can remove cold\nbranches. The tree is powerful for multi-turn and branching workloads but requires\ncareful concurrency, reference counting, and tenant isolation.\n\n## Interview answer\n\n“Radix attention stores prefix KV state in a radix tree. Shared prompt segments map\nto shared paths, making longest-prefix reuse efficient for branching workloads.”\n\n## Source\n\n- [Prompt Caching and Prefix Cache](https://www.yuque.com/shakewin/sysgq3/fddexv7e29h99vrl)",
+      "x": 335,
+      "y": 567
+    },
+    {
+      "id": "recurrent-neural-network",
+      "title": "Recurrent Neural Networks",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "sequence-modeling"
+      ],
+      "aliases": [
+        "RNN",
+        "LSTM",
+        "GRU"
+      ],
+      "knowledgeBases": [
+        "ML Course",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "An RNN processes a sequence by repeatedly updating a fixed-size hidden state with shared weights. This gives linear sequence work and constant recurrent state at inference, but training is sequential across positions and long-range information must survive every intermediate update.",
+      "body": "An RNN processes a sequence by repeatedly updating a fixed-size hidden state with\nshared weights. This gives linear sequence work and constant recurrent state at\ninference, but training is sequential across positions and long-range information\nmust survive every intermediate update.\n\nRepeated Jacobian products cause gradients to vanish or explode. LSTMs introduce a\ncell-state highway controlled by forget, input, and output gates; when the forget\ngate remains near one, information and gradients can travel farther. GRUs simplify\nthe same gated-memory idea.\n\nAttention gives direct paths between token pairs and trains across positions in\nparallel, at the cost of dense pairwise work and a growing cache. RNNs retain a\nuseful mental model for streaming systems and motivate modern state-space models.\n\n## Interview answer\n\n“An RNN compresses the prefix into a recurrent hidden state. It is cheap to stream,\nbut sequential training and repeated Jacobians hurt parallelism and long-range\ncredit assignment; LSTM gates create a more stable memory path.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [Deep Learning with PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)",
+      "x": 517,
+      "y": 259
+    },
+    {
+      "id": "reinforcement-learning",
+      "title": "Reinforcement Learning",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "post-training"
+      ],
+      "aliases": [
+        "RL"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "Reinforcement learning optimizes a policy through interaction: an agent observes a state, takes an action, receives reward, and seeks high discounted return.",
+      "body": "Reinforcement learning optimizes a policy through interaction: an agent observes a\nstate, takes an action, receives reward, and seeks high discounted return.\n\nModel-based methods use transition and reward dynamics for planning; model-free\nmethods estimate values or policies directly. Exploration gathers information but\ncan reduce immediate reward. Delayed credit, high-variance returns, distribution\nshift, and reward misspecification make RL harder than supervised prediction.\n\nLLM post-training casts token generation as a policy, but its environment is unusual:\ntrajectories are expensive, rewards may be learned or rule-based, and a reference\npolicy is often used to limit destructive drift.\n\n## Sources\n\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 814,
+      "y": 515
+    },
+    {
+      "id": "residual-network",
+      "title": "Residual Networks",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "training"
+      ],
+      "aliases": [
+        "ResNet",
+        "residual connection"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "A residual connection writes a block as $x_{l+1}=x_l+F(x_l)$, giving information and gradients a direct path through depth.",
+      "body": "A residual connection writes a block as $x_{l+1}=x_l+F(x_l)$, giving information\nand gradients a direct path through depth.\n\nThe identity path makes it easier for a layer to learn a small refinement instead\nof reconstructing the full representation. Residuals underpin deep CNNs and\nTransformers, usually together with normalization. Shape mismatches require a\nprojection, and poorly scaled residual branches can still destabilize very deep\nmodels. Hyper-connections generalize the single stream into several interacting\nresidual streams.\n\n## Sources\n\n- [Deep Learning PyTorch](https://www.yuque.com/shakewin/fidaqi/rwg53sz1y5tcidkw)\n- [MLi Paper Reading](https://www.yuque.com/shakewin/woezs0/hhoofowylkt3t2id)\n- [mHC](https://www.yuque.com/shakewin/woezs0/qcd8g69ec9wrft2a)",
+      "x": 531,
+      "y": 631
+    },
+    {
+      "id": "reward-modeling",
+      "title": "Reward Modeling",
+      "type": "concept",
+      "domains": [
+        "post-training",
+        "evaluation"
+      ],
+      "aliases": [
+        "preference model",
+        "reward model"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A reward model converts human preferences or verifiable rules into a scalar signal for candidate responses.",
+      "body": "A reward model converts human preferences or verifiable rules into a scalar signal\nfor candidate responses.\n\nFor pairwise preferences, a Bradley–Terry objective raises the score of a chosen\nresponse relative to a rejected one. Learned rewards generalize beyond labeled\npairs but can be exploited: the policy may discover high-scoring behavior that\nviolates the evaluator's intent. Rule-based rewards avoid a learned predictor for\nverifiable tasks but cover fewer behaviors. Reward evaluation therefore needs held-out\nhuman checks, adversarial testing, and monitoring for length or style shortcuts.\n\n## Sources\n\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [DPO](https://www.yuque.com/shakewin/woezs0/gway2i9nrspb9o7k)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 787,
+      "y": 483
+    },
+    {
+      "id": "rlhf",
+      "title": "Reinforcement Learning from Human Feedback",
+      "type": "concept",
+      "domains": [
+        "post-training",
+        "alignment"
+      ],
+      "aliases": [
+        "RLHF"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "RLHF aligns a language model by collecting preference judgments, fitting a reward model, and optimizing an SFT policy against that reward while constraining drift from a reference model.",
+      "body": "RLHF aligns a language model by collecting preference judgments, fitting a reward\nmodel, and optimizing an SFT policy against that reward while constraining drift from\na reference model.\n\nIt can optimize nuanced sequence-level behavior beyond token imitation, but it is\nexpensive and vulnerable to reward hacking, annotator disagreement, distribution\nshift, and unstable policy updates. Good systems preserve raw preference provenance,\nmeasure disagreement, test adversarial prompts, and monitor KL and reward trends\nalongside human quality.\n\n## Sources\n\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 701,
+      "y": 475
+    },
+    {
+      "id": "rms-normalization",
+      "title": "Root Mean Square Normalization",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "training"
+      ],
+      "aliases": [
+        "RMSNorm"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "RMSNorm scales a hidden vector by its root mean square and then applies a learned per-feature gain:",
+      "body": "RMSNorm scales a hidden vector by its root mean square and then applies a learned\nper-feature gain:\n\n$$\n\\operatorname{RMSNorm}(x)=\\gamma\\odot\n\\frac{x}{\\sqrt{\\frac{1}{d}\\sum_i x_i^2+\\epsilon}}.\n$$\n\nUnlike LayerNorm, it does not subtract the feature mean. The normalization controls\nthe overall activation scale, while $\\gamma$ restores the model's ability to amplify\nor suppress individual dimensions. Pre-norm Transformer blocks place it before\nattention and the feed-forward sublayer so the residual stream retains a stable\nidentity path.\n\nReductions and the choice of $\\epsilon$ make implementation precision important.\nNormalization can stabilize scale, but it does not by itself prevent every source\nof exploding gradients or guarantee healthy optimization.\n\n## Interview answer\n\n“RMSNorm divides by root-mean-square magnitude and learns a per-dimension gain. It\nomits LayerNorm's mean-centering, giving modern Transformers a simpler scale-control\nmechanism, commonly in a pre-norm residual layout.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)",
+      "x": 671,
+      "y": 145
+    },
+    {
+      "id": "rotary-position-embedding",
+      "title": "Rotary Position Embedding",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "RoPE",
+        "rotary embedding"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "RoPE injects position by rotating query and key components so their dot product depends on relative displacement as well as content.",
+      "body": "RoPE injects position by rotating query and key components so their dot product\ndepends on relative displacement as well as content.\n\nIt is applied to queries and keys, not values. Frequencies span local through\nlong-range scales; extending far beyond the trained context can expose unseen\nangles, so interpolation and schemes such as YaRN modify selected frequency bands.\nIn ordinary attention, cached keys\nalready contain their positional rotation. In MLA, position handling must be split\ncarefully: mixing RoPE into the compressed latent can prevent the weight-absorption\nalgebra used for efficient decode, so DeepSeek separates positional and compressed\ncontent components.\n\nThe failure mode to remember is cache inconsistency: wrong position indices or\ndifferent RoPE scaling between prefill and decode corrupt attention even when tensor\nshapes remain valid.\n\n## Interview answer\n\n“RoPE rotates Q and K by position so attention scores encode relative distance. Its\nplacement matters for KV-cache reuse and especially for MLA's absorb-mode algebra.”\n\n## Sources\n\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [MLA](https://www.yuque.com/shakewin/woezs0/fz9zd2ttsiywlelx)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 605,
+      "y": 404
+    },
+    {
+      "id": "search-and-a-star",
+      "title": "Search and A*",
+      "type": "concept",
+      "domains": [
+        "foundations"
+      ],
+      "aliases": [
+        "A-star search",
+        "graph search"
+      ],
+      "knowledgeBases": [
+        "ML Course"
+      ],
+      "summary": "Search explores a state space by maintaining a frontier of candidate paths and an explored set that prevents repeated work. Uniform-cost search expands the lowest known path cost $g(n)$; greedy best-first search uses only an estimated remaining cost $h(n)$; A* combines them as $f(n)=g(n)+h(n)$.",
+      "body": "Search explores a state space by maintaining a frontier of candidate paths and an\nexplored set that prevents repeated work. Uniform-cost search expands the lowest\nknown path cost $g(n)$; greedy best-first search uses only an estimated remaining\ncost $h(n)$; A* combines them as $f(n)=g(n)+h(n)$.\n\nAn admissible heuristic never overestimates the remaining cost, which lets A* retain\noptimality under the usual assumptions. A weak heuristic degenerates toward\nuniform-cost search, while an overconfident heuristic may be fast but lose the best\nsolution. The same pattern appears in agent planning: proposal order, state\ndeduplication, cost accounting, and termination rules matter as much as generation.\n\n## Interview answer\n\n“A* expands the state with the smallest known cost plus admissible estimate. It is\noptimal with the right heuristic, but memory and branching still limit scale.”\n\n## Source\n\n- [Gatech CS6601 - AI](https://www.yuque.com/shakewin/fidaqi/dlm2n18clgtdxppy)",
+      "x": 90,
+      "y": 554
+    },
+    {
+      "id": "self-attention",
+      "title": "Self-Attention",
+      "type": "concept",
+      "domains": [
+        "model-architecture"
+      ],
+      "aliases": [
+        "scaled dot-product attention"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Self-attention lets each token build a context-dependent representation by weighting values from tokens in the same sequence.",
+      "body": "Self-attention lets each token build a context-dependent representation by\nweighting values from tokens in the same sequence.\n\nQueries describe what a token seeks, keys describe what each position offers for\nmatching, and values carry the information to aggregate. For sequence length\n$L$, dense attention materializes an $L\\times L$ interaction pattern and therefore\nhas $O(L^2)$ pairwise work. Multi-head projections let the model represent several\nrelationship patterns at once.\n\nThe chief advantage over recurrence is a short path between arbitrary positions\nand parallel computation during training. Its chief weakness is quadratic scaling\nfor long contexts, motivating cache-aware and sparse variants.\n\n## Interview answer\n\n“Self-attention computes content-dependent weighted combinations of tokens using\nquery-key similarities. It parallelizes well and models long-range dependencies,\nbut dense attention scales quadratically with sequence length.”\n\n## Source\n\n- [Attention is All You Need](https://www.yuque.com/shakewin/woezs0/wfnf4pb8yxth3i36)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 514,
+      "y": 331
+    },
+    {
+      "id": "sentence-embeddings",
+      "title": "Sentence Embeddings",
+      "type": "concept",
+      "domains": [
+        "retrieval",
+        "representation-learning"
+      ],
+      "aliases": [
+        "semantic embeddings",
+        "Sentence-BERT"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A sentence embedding maps variable-length text into a fixed-size vector whose geometry approximates semantic similarity.",
+      "body": "A sentence embedding maps variable-length text into a fixed-size vector whose\ngeometry approximates semantic similarity.\n\nSiamese or dual-encoder training processes two texts independently and optimizes\ntheir similarity, making retrieval far cheaper than running cross-attention over\nevery pair. Pooling choice, normalization, domain data, and negative examples shape\nthe space. Embeddings are fast candidate generators, but a single vector loses token\ndetail and similarity may reflect topic rather than answer relevance.\n\n## Source\n\n- [RAG](https://www.yuque.com/shakewin/woezs0/kurmygcgi69wb5kv)",
+      "x": 793,
+      "y": 667
+    },
+    {
+      "id": "sequence-model-families",
+      "title": "RNNs, Transformers, and State Space Models",
+      "type": "comparison",
+      "domains": [
+        "model-architecture",
+        "sequence-modeling"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "| Family | Training across positions | Inference state | Long-range access | Primary tradeoff | |---|---|---|---|---| | RNN/LSTM | Sequential | Fixed-size hidden/cell state | Information passes through every step | Cheap streaming, difficult parallelism and long credit paths | | Transformer | Parallel | KV cache grows with context | Direct content-based lookup | Strong recall and hardware utilization, quadratic dense attention | | Selective SSM | Parallel scan/convolution | Fixed-size latent state | Compressed into learned dynamics | Linear scaling, but state bottleneck may lose exact history |",
+      "body": "| Family | Training across positions | Inference state | Long-range access | Primary tradeoff |\n|---|---|---|---|---|\n| RNN/LSTM | Sequential | Fixed-size hidden/cell state | Information passes through every step | Cheap streaming, difficult parallelism and long credit paths |\n| Transformer | Parallel | KV cache grows with context | Direct content-based lookup | Strong recall and hardware utilization, quadratic dense attention |\n| Selective SSM | Parallel scan/convolution | Fixed-size latent state | Compressed into learned dynamics | Linear scaling, but state bottleneck may lose exact history |\n\nThe asymptotic comparison is not the whole engineering decision. Kernel maturity,\nhardware utilization, hybrid layers, task length, and whether exact retrieval is\nneeded often dominate. Transformers exchange memory for direct access; recurrent\nfamilies exchange direct access for compression.\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 426,
+      "y": 168
+    },
+    {
+      "id": "spectral-residual-cnn",
+      "title": "Spectral Residual CNN",
+      "type": "concept",
+      "domains": [
+        "applied-ml",
+        "anomaly-detection"
+      ],
+      "aliases": [
+        "SR-CNN"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "SR-CNN transforms a sliding time-series window into a spectral-residual saliency map and uses a small one-dimensional CNN to classify anomalies instead of relying only on a fixed saliency threshold.",
+      "body": "SR-CNN transforms a sliding time-series window into a spectral-residual saliency map\nand uses a small one-dimensional CNN to classify anomalies instead of relying only\non a fixed saliency threshold.\n\nThe spectral residual removes the locally averaged log-amplitude spectrum, exposing\nsurprising frequency components before transforming back to time. Synthetic anomaly\ninjection supplies training labels when real labels are scarce. Boundary estimation\nplaces the newest point away from the FFT window edge. Risks include unrealistic\nsynthetic anomalies and evaluation metrics that forgive excessive delay.\n\n## Source\n\n- [Time-Series Anomaly Detection at Microsoft](https://www.yuque.com/shakewin/woezs0/kogx0m65fye4qri6)",
+      "x": 911,
+      "y": 395
+    },
+    {
+      "id": "speculative-decoding",
+      "title": "Speculative Decoding",
+      "type": "concept",
+      "domains": [
+        "inference"
+      ],
+      "aliases": [
+        "speculative sampling"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Speculative decoding lets a cheap draft model propose several tokens and asks the target model to verify them in one parallel forward pass.",
+      "body": "Speculative decoding lets a cheap draft model propose several tokens and asks the\ntarget model to verify them in one parallel forward pass.\n\nFor greedy decoding, matching target choices can be accepted directly. For sampling,\naccept/reject and correction distributions are required so the final samples still\nfollow the target model distribution. Speedup depends on acceptance length and the\ndraft-to-target cost ratio; a slow or poorly aligned draft can make the method lose.\n\nVerification also complicates KV-cache rollback and branching. The core result is\nlower latency without changing the target distribution, not fewer target parameters.\n\n## Interview answer\n\n“A draft proposes multiple tokens, and the target verifies them in parallel. The\nmethod helps when acceptance is high and drafting is cheap; sampling needs rejection\ncorrection to preserve the target distribution.”\n\n## Sources\n\n- [MTP](https://www.yuque.com/shakewin/woezs0/xsgrva9gef5pwz5n)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 469,
+      "y": 573
+    },
+    {
+      "id": "state-space-model",
+      "title": "State Space Models",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "sequence-modeling"
+      ],
+      "aliases": [
+        "SSM",
+        "selective state space model",
+        "Mamba"
+      ],
+      "knowledgeBases": [
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "A state-space sequence model evolves a compact latent state and reads an output from it. In discrete form, $x_k=Ax_{k-1}+Bu_k$ separates state transition from input injection. Structured parameterizations allow the recurrence to be evaluated with parallel scans or convolutions during training while retaining constant-state, linear-time streaming inference.",
+      "body": "A state-space sequence model evolves a compact latent state and reads an output from\nit. In discrete form, $x_k=Ax_{k-1}+Bu_k$ separates state transition from input\ninjection. Structured parameterizations allow the recurrence to be evaluated with\nparallel scans or convolutions during training while retaining constant-state,\nlinear-time streaming inference.\n\nSelective models such as Mamba make input, output, or timescale parameters depend on\nthe current token. This lets the system decide what to write, retain, and expose,\naddressing the content-insensitive compression of a fixed linear recurrence.\n\nUnlike attention, the state is a bottleneck rather than an explicit store of prior\ntokens. That improves asymptotic memory but can lose exact recall; practical results\ndepend on scan kernels, initialization, state dimension, and hybridization with\nattention.\n\n## Interview answer\n\n“An SSM turns a sequence into updates of a compact latent state. Its structured\nrecurrence can train in parallel and decode with constant state; selective SSMs make\nthe write/read dynamics input-dependent, trading attention's explicit history for\nefficient compression.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 520,
+      "y": 206
+    },
+    {
+      "id": "supervised-fine-tuning",
+      "title": "Supervised Fine-Tuning",
+      "type": "concept",
+      "domains": [
+        "training",
+        "post-training"
+      ],
+      "aliases": [
+        "SFT",
+        "instruction tuning"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "SFT trains a pretrained model on labeled input-output examples to teach instruction following, task format, style, or domain behavior.",
+      "body": "SFT trains a pretrained model on labeled input-output examples to teach instruction\nfollowing, task format, style, or domain behavior.\n\nCross-entropy is usually computed only on the desired response tokens. Dataset\nquality, coverage, and consistency dominate: contradictory templates teach unstable\nbehavior, while narrow data may overwrite general capabilities. Parameter-efficient\nmethods such as LoRA lower training memory and storage but do not remove the need\nfor careful evaluation. SFT commonly creates the starting policy for preference\noptimization.\n\n## Sources\n\n- [NVIDIA Agentic AI Training](https://www.yuque.com/shakewin/fidaqi/fgv15n9m42qh9m77)\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)\n- [DeepSeek Paper Reading](https://www.yuque.com/shakewin/woezs0/agn9y7w2skcvzzrk)",
+      "x": 671,
+      "y": 402
+    },
+    {
+      "id": "swiglu-feed-forward-network",
+      "title": "SwiGLU Feed-Forward Network",
+      "type": "concept",
+      "domains": [
+        "model-architecture"
+      ],
+      "aliases": [
+        "SwiGLU",
+        "gated feed-forward network"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "SwiGLU is the gated feed-forward sublayer used by many modern decoder-only Transformers. Two projections create an up branch and a gate branch; the gate uses the SiLU/Swish activation, their elementwise product is formed, and a down projection returns to the model dimension:",
+      "body": "SwiGLU is the gated feed-forward sublayer used by many modern decoder-only\nTransformers. Two projections create an up branch and a gate branch; the gate uses\nthe SiLU/Swish activation, their elementwise product is formed, and a down projection\nreturns to the model dimension:\n\n$$\n\\operatorname{SwiGLU}(x)=\n\\bigl(\\operatorname{SiLU}(xW_g)\\odot xW_u\\bigr)W_d.\n$$\n\nThe gate is not just a scalar switch: both projections are learned feature vectors,\nso their product provides conditional, multiplicative computation per token. The\nextra projection increases parameter and FLOP accounting relative to a two-matrix\nMLP, so implementations often adjust the intermediate width.\n\n## Interview answer\n\n“SwiGLU uses one learned projection, passed through SiLU, to gate another learned\nprojection elementwise before the down projection. It gives the per-token FFN a\nmultiplicative conditional pathway.”\n\n## Sources\n\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)",
+      "x": 271,
+      "y": 307
+    },
+    {
+      "id": "temporal-difference-learning",
+      "title": "Temporal-Difference Learning",
+      "type": "concept",
+      "domains": [
+        "foundations",
+        "reinforcement-learning"
+      ],
+      "aliases": [
+        "TD learning",
+        "Q-learning",
+        "SARSA"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "TD learning updates a value estimate from a bootstrapped target such as $r+\\gamma V(s')$ before an episode finishes. It sits between one-step prediction and full Monte Carlo return estimation.",
+      "body": "TD learning updates a value estimate from a bootstrapped target such as\n$r+\\gamma V(s')$ before an episode finishes. It sits between one-step prediction\nand full Monte Carlo return estimation.\n\nQ-learning is off-policy: its target uses the best next action regardless of the\nbehavior policy. SARSA is on-policy: its target uses the next action actually chosen.\nBootstrapping lowers variance and enables online updates but introduces bias and can\nbe unstable with function approximation, off-policy data, and aggressive updates.\n\n## Interview answer\n\n“TD methods learn from reward plus an estimated future value. Q-learning targets a\ngreedy policy; SARSA evaluates the behavior policy actually being followed.”\n\n## Sources\n\n- [CS7641 ML](https://www.yuque.com/shakewin/fidaqi/evbvouf8opoc9aix)\n- [RLHF](https://www.yuque.com/shakewin/woezs0/ldm61haxvifpi7bb)",
+      "x": 966,
+      "y": 482
+    },
+    {
+      "id": "tensor-parallelism",
+      "title": "Tensor Parallelism",
+      "type": "concept",
+      "domains": [
+        "distributed-systems",
+        "inference",
+        "training"
+      ],
+      "aliases": [
+        "TP"
+      ],
+      "knowledgeBases": [
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Tensor parallelism shards individual matrix operations across devices, allowing a layer that is too large for one accelerator to execute collectively.",
+      "body": "Tensor parallelism shards individual matrix operations across devices, allowing a\nlayer that is too large for one accelerator to execute collectively.\n\nIt reduces per-device parameter and activation storage but introduces collectives\ninside each layer. Because these operations occur frequently, fast links such as\nNVLink/NVSwitch matter greatly; PCIe-only topology can erase the theoretical gain.\nFor inference, TP may also shard attention heads or KV state and changes how serving\nbatches communicate.\n\n## Interview answer\n\n“Tensor parallelism splits each layer's matrices across devices. It solves model\nfit and can add compute throughput, but frequent collectives make interconnect\nlatency and bandwidth decisive.”\n\n## Source\n\n- [Distributed Framework](https://www.yuque.com/shakewin/sysgq3/mhw00hcggbv1scr8)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 605,
+      "y": 521
+    },
+    {
+      "id": "time-series-anomaly-detection",
+      "title": "Time-Series Anomaly Detection",
+      "type": "concept",
+      "domains": [
+        "applied-ml",
+        "evaluation"
+      ],
+      "aliases": [
+        "KPI anomaly detection"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "Time-series anomaly detection identifies unusual points or segments relative to temporal patterns, seasonality, trend, and local context.",
+      "body": "Time-series anomaly detection identifies unusual points or segments relative to\ntemporal patterns, seasonality, trend, and local context.\n\nStatistical residuals, density methods, isolation forests, reconstruction models,\nand learned discriminators capture different anomaly definitions. Thresholding is\noften the hardest operational choice: labels are scarce, rates drift, and alert\nvolume matters. Evaluation must state whether it uses point-level precision/recall,\nsegment adjustment, detection delay, or top-k ranking; tolerant metrics can make a\nlate or noisy detector appear better than it is.\n\n## Sources\n\n- [Stats / ML Algorithms](https://www.yuque.com/shakewin/woezs0/gkhfzndmawi1mp01)\n- [SR-CNN](https://www.yuque.com/shakewin/woezs0/kogx0m65fye4qri6)\n- [VAE + LOF](https://www.yuque.com/shakewin/woezs0/oucahnztr1pbh5qn)",
+      "x": 889,
+      "y": 323
+    },
+    {
+      "id": "transformer-architecture",
+      "title": "Transformer Architecture",
+      "type": "concept",
+      "domains": [
+        "model-architecture",
+        "inference"
+      ],
+      "aliases": [
+        "transformer"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "A Transformer alternates token-to-token communication through attention with per-token computation through a feed-forward network, stabilized by residual paths and normalization.",
+      "body": "A Transformer alternates token-to-token communication through attention with\nper-token computation through a feed-forward network, stabilized by residual paths\nand normalization.\n\n## Mechanics and mental model\n\nAttention lets each position retrieve information from other positions; the FFN\nthen transforms the retrieved representation independently at each position.\nStacking these blocks repeatedly alternates communication and computation. A\ndecoder-only language model masks future tokens and predicts the next token from\nthe visible prefix.\n\nThe original scaled dot-product attention is\n$\\operatorname{softmax}(QK^T/\\sqrt{d_k})V$. The scale keeps logits from growing\nwith key dimension, while multiple heads learn distinct projections and patterns.\n\n## Tradeoffs and failure modes\n\n- Training parallelizes across sequence positions, but dense attention costs\n  quadratic work and memory in sequence length.\n- Decode remains sequential across generated tokens and often becomes memory-bandwidth\n  bound.\n- Architecture details such as RoPE, RMSNorm, SwiGLU, grouped-query attention, and\n  cache layout strongly affect modern implementations.\n\n## Interview answer\n\n“A Transformer block mixes information across tokens with attention, transforms\neach token with an FFN, and uses residuals plus normalization for stable depth. In\nautoregressive inference, causal masking and repeated next-token decoding make KV\ncaching essential.”\n\n## Sources\n\n- [Attention is All You Need](https://www.yuque.com/shakewin/woezs0/wfnf4pb8yxth3i36)\n- [LLaMA](https://www.yuque.com/shakewin/woezs0/avr5nrkaahavwdwv)\n- [Alisa’s book of LLMs](https://app.notion.com/p/388cad4fb60580748c53ff558a15beb0)",
+      "x": 514,
+      "y": 387
+    },
+    {
+      "id": "transformer-inference",
+      "title": "Transformer Inference Map",
+      "type": "map",
+      "domains": [
+        "inference",
+        "model-architecture",
+        "serving"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Transformer inference is easiest to reason about as four interacting levers: what each token must compute, what state is retained, what work can be reused or skipped, and how the work is placed across hardware.",
+      "body": "Transformer inference is easiest to reason about as four interacting levers:\nwhat each token must compute, what state is retained, what work can be reused or\nskipped, and how the work is placed across hardware.\n\n## Suggested learning path\n\n1. Begin with [Transformer architecture](/garden/#transformer-architecture),\n   [self-attention](/garden/#self-attention), and\n   [causal attention](/garden/#causal-attention).\n2. Learn why sequential decode creates a [KV cache](/garden/#kv-cache) and\n   why [RoPE](/garden/#rotary-position-embedding) must agree with cache positions.\n3. Compare architectural cache reduction:\n   [MQA](/garden/#multi-query-attention),\n   [GQA](/garden/#grouped-query-attention), and\n   [MLA](/garden/#multi-head-latent-attention).\n4. Study serving-time state reuse with\n   [prompt caching](/garden/#prompt-caching),\n   [paged attention](/garden/#paged-attention), and\n   [radix attention](/garden/#radix-attention).\n5. Study work avoidance and parallel verification through\n   [speculative decoding](/garden/#speculative-decoding),\n   [multi-token prediction](/garden/#multi-token-prediction), and\n   [dynamic sparse attention](/garden/#dynamic-sparse-attention).\n6. Connect kernels and scheduling through\n   [FlashAttention](/garden/#flash-attention) and\n   [continuous batching](/garden/#continuous-batching-and-sequence-packing).\n7. Finish with placement: [tensor parallelism](/garden/#tensor-parallelism),\n   [mixture of experts](/garden/#mixture-of-experts), and\n   [expert parallelism](/garden/#expert-parallelism).\n\n## The big picture\n\n| Lever | Main benefit | Main cost or risk |\n|---|---|---|\n| Cache K/V | Avoid prefix reprojection | Memory grows with context and batch |\n| Reduce KV heads or dimensions | Lower cache bytes and bandwidth | Quality or implementation complexity |\n| Reuse shared prefixes | Lower prefill time and cost | Key correctness, privacy, eviction |\n| Draft and verify | Parallelize several token checks | Low acceptance can erase gains |\n| Select sparse history | Avoid full-context attention | Retrieval misses become quality errors |\n| Tile exact attention | Avoid quadratic HBM intermediates | Kernel and hardware constraints |\n| Continuously refill batches | Improve serving utilization | Scheduler and latency complexity |\n| Shard computation | Fit and serve larger models | Communication and topology bottlenecks |\n\nThe common systems thread is arithmetic intensity. Modern accelerators can multiply\nquickly, while parameter and cache movement is expensive. An optimization is useful\nonly when its saved bytes or parallel work exceed its lookup, communication, or\nverification overhead.\n\n## Practice\n\nUse [Transformer inference drills](/garden/#transformer-inference-drills) to\nrehearse the map as design tradeoffs rather than isolated definitions.",
+      "x": 304,
+      "y": 235
+    },
+    {
+      "id": "transformer-inference-drills",
+      "title": "Transformer Inference Drills",
+      "type": "interview",
+      "domains": [
+        "inference",
+        "serving"
+      ],
+      "aliases": [],
+      "knowledgeBases": [
+        "Algorithm",
+        "Engineering",
+        "Alisa’s LLM notebook"
+      ],
+      "summary": "Each decode step reuses stored K/V tensors instead of recomputing the prefix, but the retained state grows with layers, context, batch, KV heads, and element size. That consumes capacity and must be read repeatedly. Follow-up: compare MQA, GQA, and MLA.",
+      "body": "## 1. Why does a KV cache speed generation but limit concurrency?\n\nEach decode step reuses stored K/V tensors instead of recomputing the prefix, but\nthe retained state grows with layers, context, batch, KV heads, and element size.\nThat consumes capacity and must be read repeatedly. Follow-up: compare\n[MQA, GQA, and MLA](/garden/#attention-cache-strategies).\n\n## 2. What differs between prefill and decode?\n\nPrefill processes many prompt queries in parallel and populates the cache. Decode\nusually processes one new query per sequence against the full retained prefix, so\nit has low arithmetic intensity and is often bandwidth-bound. Follow-up:\n[causal attention](/garden/#causal-attention).\n\n## 3. How can prompt layout affect infrastructure cost?\n\nPrefix caches require exact, stable token prefixes. Moving invariant system and tool\ndefinitions first, keeping serialization deterministic, and delaying dynamic values\nincrease reuse. Isolation and complete keys prevent cross-tenant leaks. Follow-up:\n[prompt caching](/garden/#prompt-caching).\n\n## 4. Why can speculative decoding preserve model quality?\n\nThe target model still verifies proposals. Greedy output accepts matching target\nchoices; probabilistic output uses accept/reject correction so samples retain the\ntarget distribution. Follow-up:\n[speculative decoding](/garden/#speculative-decoding).\n\n## 5. Does MTP mean the model emits several final tokens in one step?\n\nNot necessarily. MTP primarily adds future-token supervision during training.\nAuxiliary heads may later act as drafts, but committed output still needs target\nverification. Follow-up:\n[multi-token prediction](/garden/#multi-token-prediction).\n\n## 6. Compare paged and radix prefix caching.\n\nPaged designs use fixed-size KV blocks and block hashes; radix designs organize\nshared token sequences as tree paths. Blocks simplify allocation and partial reuse,\nwhile trees naturally model branching prompts. Follow-ups:\n[paged attention](/garden/#paged-attention) and\n[radix attention](/garden/#radix-attention).\n\n## 7. What new failure mode does sparse attention introduce?\n\nThe retrieval/indexer stage can omit evidence before expensive attention runs. That\nmakes recall and indexer training part of model correctness, not only performance.\nFollow-up: [dynamic sparse attention](/garden/#dynamic-sparse-attention).\n\n## 8. Why might more GPUs make a configuration slower?\n\nTensor and expert parallelism add collectives or all-to-all traffic. On weak links,\ncommunication, synchronization, and routing imbalance outweigh extra compute and\nreduced memory. Follow-ups: [tensor parallelism](/garden/#tensor-parallelism)\nand [expert parallelism](/garden/#expert-parallelism).\n\n## 9. Why is FlashAttention exact despite using tiles?\n\nOnline softmax tracks a running maximum, denominator, and weighted-value sum,\nrescaling old partial results when the maximum changes. This avoids materializing\nthe full attention matrix without approximating its result.\n\n## 10. Continuous batching versus sequence packing?\n\nContinuous batching replaces completed serving requests between decoding steps.\nSequence packing concatenates examples under a token budget and relies on masks and\npositions to preserve independence; it is commonly a training/fine-tuning technique.",
+      "x": 446,
+      "y": 80
+    },
+    {
+      "id": "vae-lof-anomaly-detection",
+      "title": "VAE–LOF Anomaly Detection",
+      "type": "concept",
+      "domains": [
+        "applied-ml",
+        "anomaly-detection"
+      ],
+      "aliases": [
+        "LOF-VAE"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "This hybrid uses Local Outlier Factor to remove obvious anomalies or create weak labels before fitting a VAE-based KPI detector.",
+      "body": "This hybrid uses Local Outlier Factor to remove obvious anomalies or create weak\nlabels before fitting a VAE-based KPI detector.\n\nLOF compares a point's local density with its neighbors, while the VAE learns a\nprobabilistic normal representation and reconstruction objective. The combination\ncan retain more normal training data than aggressive filtering, but neighborhood\nsize, top-k selection, and loss weighting are dataset-sensitive. Evidence from a\nsmall KPI collection does not establish generality, so cross-service validation and\nablation are essential.\n\n## Source\n\n- [VAE + LOF Anomaly Detection](https://www.yuque.com/shakewin/woezs0/oucahnztr1pbh5qn)",
+      "x": 748,
+      "y": 397
+    },
+    {
+      "id": "variational-autoencoder",
+      "title": "Variational Autoencoder",
+      "type": "concept",
+      "domains": [
+        "generative-models",
+        "applied-ml"
+      ],
+      "aliases": [
+        "VAE"
+      ],
+      "knowledgeBases": [
+        "Algorithm"
+      ],
+      "summary": "A VAE learns a probabilistic latent space by encoding an input into a distribution, sampling a latent with the reparameterization trick, and decoding it back to data.",
+      "body": "A VAE learns a probabilistic latent space by encoding an input into a distribution,\nsampling a latent with the reparameterization trick, and decoding it back to data.\n\nIts evidence lower bound combines reconstruction quality with a KL penalty that\nkeeps the approximate posterior near a prior. This produces a smooth sampleable\nlatent space but can blur outputs or suffer posterior collapse when the decoder\nignores the latent. VAE encoders also support anomaly scoring when unusual samples\nreconstruct poorly or have low latent likelihood.\n\n## Sources\n\n- [Diffusion Model](https://www.yuque.com/shakewin/woezs0/ppbpaxtvhppyvtse)\n- [VAE + LOF Anomaly Detection](https://www.yuque.com/shakewin/woezs0/oucahnztr1pbh5qn)",
+      "x": 448,
+      "y": 457
+    },
+    {
+      "id": "vector-database",
+      "title": "Vector Databases and HNSW",
+      "type": "concept",
+      "domains": [
+        "retrieval",
+        "systems"
+      ],
+      "aliases": [
+        "vector store",
+        "HNSW",
+        "approximate nearest-neighbor search"
+      ],
+      "knowledgeBases": [
+        "Algorithm",
+        "ML Course"
+      ],
+      "summary": "A vector database stores embeddings plus metadata and serves similarity search. Approximate nearest-neighbor indexes trade exactness for latency and scale.",
+      "body": "A vector database stores embeddings plus metadata and serves similarity search.\nApproximate nearest-neighbor indexes trade exactness for latency and scale.\n\nHNSW builds a multilayer proximity graph: sparse upper layers provide long jumps,\nand dense lower layers refine local neighbors. Search breadth controls a recall versus\nlatency tradeoff; construction parameters affect memory and index quality. Production\nsystems also need metadata filtering, versioned embeddings, deletion, tenancy, and\nreindexing. High vector recall is useful only if retrieved chunks are relevant to the\ndownstream answer.\n\n## Sources\n\n- [RAG](https://www.yuque.com/shakewin/woezs0/kurmygcgi69wb5kv)\n- [NVIDIA Agentic AI Training](https://www.yuque.com/shakewin/fidaqi/fgv15n9m42qh9m77)",
+      "x": 954,
+      "y": 636
+    }
+  ],
+  "edges": [
+    {
+      "source": "alignment-methods",
+      "target": "policy-gradient",
+      "type": "prerequisites"
+    },
+    {
+      "source": "alignment-methods",
+      "target": "reward-modeling",
+      "type": "prerequisites"
+    },
+    {
+      "source": "alignment-methods",
+      "target": "supervised-fine-tuning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "attention-cache-strategies",
+      "target": "kv-cache",
+      "type": "prerequisites"
+    },
+    {
+      "source": "attention-cache-strategies",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "backpropagation-and-autodiff",
+      "target": "deep-learning-optimization",
+      "type": "enables"
+    },
+    {
+      "source": "backpropagation-and-autodiff",
+      "target": "llm-compute-and-memory-accounting",
+      "type": "enables"
+    },
+    {
+      "source": "backpropagation-and-autodiff",
+      "target": "neural-network-computation",
+      "type": "prerequisites"
+    },
+    {
+      "source": "bayesian-networks",
+      "target": "causal-structure-learning",
+      "type": "enables"
+    },
+    {
+      "source": "bayesian-networks",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "bert",
+      "target": "sentence-embeddings",
+      "type": "implemented_in"
+    },
+    {
+      "source": "bert",
+      "target": "masked-language-modeling",
+      "type": "prerequisites"
+    },
+    {
+      "source": "bert",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "causal-attention",
+      "target": "kv-cache",
+      "type": "enables"
+    },
+    {
+      "source": "causal-attention",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "causal-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "causal-structure-learning",
+      "target": "greedy-equivalence-search",
+      "type": "implemented_in"
+    },
+    {
+      "source": "causal-structure-learning",
+      "target": "pc-algorithm",
+      "type": "implemented_in"
+    },
+    {
+      "source": "causal-structure-learning",
+      "target": "bayesian-networks",
+      "type": "prerequisites"
+    },
+    {
+      "source": "chain-of-thought-reasoning",
+      "target": "llm-evaluation",
+      "type": "affects"
+    },
+    {
+      "source": "chain-of-thought-reasoning",
+      "target": "reinforcement-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "chain-of-thought-reasoning",
+      "target": "supervised-fine-tuning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "classical-ml-methods",
+      "target": "time-series-anomaly-detection",
+      "type": "enables"
+    },
+    {
+      "source": "context-parallelism",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "context-parallelism",
+      "target": "llm-compute-and-memory-accounting",
+      "type": "affects"
+    },
+    {
+      "source": "context-parallelism",
+      "target": "distributed-collectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "context-parallelism",
+      "target": "flash-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "context-parallelism",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "continuous-batching-and-sequence-packing",
+      "target": "llm-compute-and-memory-accounting",
+      "type": "affects"
+    },
+    {
+      "source": "continuous-batching-and-sequence-packing",
+      "target": "paged-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "continuous-batching-and-sequence-packing",
+      "target": "kv-cache",
+      "type": "prerequisites"
+    },
+    {
+      "source": "data-parallelism",
+      "target": "fully-sharded-data-parallelism",
+      "type": "enables"
+    },
+    {
+      "source": "decoding-sampling-strategies",
+      "target": "llm-evaluation",
+      "type": "affects"
+    },
+    {
+      "source": "decoding-sampling-strategies",
+      "target": "causal-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "deep-learning-optimization",
+      "target": "backpropagation-and-autodiff",
+      "type": "prerequisites"
+    },
+    {
+      "source": "deep-learning-optimization",
+      "target": "ml-generalization-and-regularization",
+      "type": "prerequisites"
+    },
+    {
+      "source": "deep-learning-optimization",
+      "target": "rlhf",
+      "type": "used_by"
+    },
+    {
+      "source": "deep-learning-optimization",
+      "target": "supervised-fine-tuning",
+      "type": "used_by"
+    },
+    {
+      "source": "diffusion-model",
+      "target": "generative-adversarial-network",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "diffusion-model",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "group-relative-policy-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "proximal-policy-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "reward-modeling",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "rlhf",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "direct-preference-optimization",
+      "target": "supervised-fine-tuning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "gpu-performance-model",
+      "type": "prerequisites"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "context-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "data-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "expert-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "fully-sharded-data-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "distributed-collectives",
+      "target": "tensor-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "distributed-systems-drills",
+      "target": "distributed-training-and-mlops",
+      "type": "prerequisites"
+    },
+    {
+      "source": "distributed-training-and-mlops",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "dynamic-sparse-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "dynamic-sparse-attention",
+      "target": "multi-head-latent-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "dynamic-sparse-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "encoder-decoder",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "encoder-decoder",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "engram-conditional-memory",
+      "target": "mixture-of-experts",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "engram-conditional-memory",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "expert-parallelism",
+      "target": "mixture-of-experts",
+      "type": "part_of"
+    },
+    {
+      "source": "expert-parallelism",
+      "target": "mixture-of-experts",
+      "type": "prerequisites"
+    },
+    {
+      "source": "flash-attention",
+      "target": "llm-compute-and-memory-accounting",
+      "type": "affects"
+    },
+    {
+      "source": "flash-attention",
+      "target": "gpu-performance-model",
+      "type": "prerequisites"
+    },
+    {
+      "source": "flash-attention",
+      "target": "numerical-stability",
+      "type": "prerequisites"
+    },
+    {
+      "source": "flash-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "foundations",
+      "target": "causal-structure-learning",
+      "type": "enables"
+    },
+    {
+      "source": "foundations-drills",
+      "target": "foundations",
+      "type": "prerequisites"
+    },
+    {
+      "source": "fully-sharded-data-parallelism",
+      "target": "tensor-parallelism",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "fully-sharded-data-parallelism",
+      "target": "data-parallelism",
+      "type": "prerequisites"
+    },
+    {
+      "source": "generalized-advantage-estimation",
+      "target": "policy-gradient",
+      "type": "prerequisites"
+    },
+    {
+      "source": "generalized-advantage-estimation",
+      "target": "temporal-difference-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "generalized-advantage-estimation",
+      "target": "proximal-policy-optimization",
+      "type": "used_by"
+    },
+    {
+      "source": "generative-adversarial-network",
+      "target": "diffusion-model",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "generative-adversarial-network",
+      "target": "variational-autoencoder",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "generative-adversarial-network",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "gpu-performance-model",
+      "target": "distributed-collectives",
+      "type": "enables"
+    },
+    {
+      "source": "gpu-performance-model",
+      "target": "flash-attention",
+      "type": "enables"
+    },
+    {
+      "source": "gpu-performance-model",
+      "target": "llm-compute-and-memory-accounting",
+      "type": "enables"
+    },
+    {
+      "source": "graph-neural-network",
+      "target": "transformer-architecture",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "graph-neural-network",
+      "target": "ml-generalization-and-regularization",
+      "type": "prerequisites"
+    },
+    {
+      "source": "greedy-equivalence-search",
+      "target": "pc-algorithm",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "greedy-equivalence-search",
+      "target": "causal-structure-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "greedy-equivalence-search",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "group-relative-policy-optimization",
+      "target": "direct-preference-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "group-relative-policy-optimization",
+      "target": "proximal-policy-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "group-relative-policy-optimization",
+      "target": "rlhf",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "group-relative-policy-optimization",
+      "target": "policy-gradient",
+      "type": "prerequisites"
+    },
+    {
+      "source": "group-relative-policy-optimization",
+      "target": "reward-modeling",
+      "type": "prerequisites"
+    },
+    {
+      "source": "grouped-query-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "grouped-query-attention",
+      "target": "multi-head-latent-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "grouped-query-attention",
+      "target": "multi-query-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "grouped-query-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "kv-cache",
+      "target": "grouped-query-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "kv-cache",
+      "target": "multi-head-latent-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "kv-cache",
+      "target": "multi-query-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "kv-cache",
+      "target": "paged-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "kv-cache",
+      "target": "causal-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "kv-cache",
+      "target": "continuous-batching-and-sequence-packing",
+      "type": "used_by"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "backpropagation-and-autodiff",
+      "type": "prerequisites"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "gpu-performance-model",
+      "type": "prerequisites"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "fully-sharded-data-parallelism",
+      "type": "used_by"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "kv-cache",
+      "type": "used_by"
+    },
+    {
+      "source": "llm-compute-and-memory-accounting",
+      "target": "mixed-precision-training",
+      "type": "used_by"
+    },
+    {
+      "source": "llm-evaluation",
+      "target": "rlhf",
+      "type": "affects"
+    },
+    {
+      "source": "llm-evaluation",
+      "target": "supervised-fine-tuning",
+      "type": "affects"
+    },
+    {
+      "source": "manifold-constrained-hyper-connections",
+      "target": "pipeline-parallelism",
+      "type": "affects"
+    },
+    {
+      "source": "manifold-constrained-hyper-connections",
+      "target": "residual-network",
+      "type": "prerequisites"
+    },
+    {
+      "source": "masked-language-modeling",
+      "target": "bert",
+      "type": "enables"
+    },
+    {
+      "source": "masked-language-modeling",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "mixed-precision-training",
+      "target": "model-quantization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "mixed-precision-training",
+      "target": "ml-generalization-and-regularization",
+      "type": "prerequisites"
+    },
+    {
+      "source": "mixture-of-experts",
+      "target": "engram-conditional-memory",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "mixture-of-experts",
+      "target": "expert-parallelism",
+      "type": "optimized_by"
+    },
+    {
+      "source": "mixture-of-experts",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "ml-generalization-and-regularization",
+      "target": "supervised-fine-tuning",
+      "type": "affects"
+    },
+    {
+      "source": "model-quantization",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "model-quantization",
+      "target": "mixed-precision-training",
+      "type": "affects"
+    },
+    {
+      "source": "model-quantization",
+      "target": "mixed-precision-training",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "multi-head-latent-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "multi-head-latent-attention",
+      "target": "grouped-query-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "multi-head-latent-attention",
+      "target": "multi-query-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "multi-head-latent-attention",
+      "target": "rotary-position-embedding",
+      "type": "prerequisites"
+    },
+    {
+      "source": "multi-head-latent-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "multi-query-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "multi-query-attention",
+      "target": "grouped-query-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "multi-query-attention",
+      "target": "multi-head-latent-attention",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "multi-query-attention",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "multi-token-prediction",
+      "target": "speculative-decoding",
+      "type": "enables"
+    },
+    {
+      "source": "multi-token-prediction",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "neural-network-computation",
+      "target": "backpropagation-and-autodiff",
+      "type": "enables"
+    },
+    {
+      "source": "neural-network-computation",
+      "target": "recurrent-neural-network",
+      "type": "enables"
+    },
+    {
+      "source": "neural-network-computation",
+      "target": "transformer-architecture",
+      "type": "enables"
+    },
+    {
+      "source": "numerical-stability",
+      "target": "flash-attention",
+      "type": "affects"
+    },
+    {
+      "source": "numerical-stability",
+      "target": "mixed-precision-training",
+      "type": "affects"
+    },
+    {
+      "source": "numerical-stability",
+      "target": "self-attention",
+      "type": "affects"
+    },
+    {
+      "source": "numerical-stability",
+      "target": "neural-network-computation",
+      "type": "prerequisites"
+    },
+    {
+      "source": "numerical-stability",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "paged-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "paged-attention",
+      "target": "prompt-caching",
+      "type": "part_of"
+    },
+    {
+      "source": "paged-attention",
+      "target": "kv-cache",
+      "type": "prerequisites"
+    },
+    {
+      "source": "pc-algorithm",
+      "target": "greedy-equivalence-search",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "pc-algorithm",
+      "target": "causal-structure-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "pipeline-parallelism",
+      "target": "manifold-constrained-hyper-connections",
+      "type": "affects"
+    },
+    {
+      "source": "pipeline-parallelism",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "policy-gradient",
+      "target": "proximal-policy-optimization",
+      "type": "enables"
+    },
+    {
+      "source": "policy-gradient",
+      "target": "rlhf",
+      "type": "enables"
+    },
+    {
+      "source": "policy-gradient",
+      "target": "reinforcement-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "probabilistic-objectives",
+      "target": "reward-modeling",
+      "type": "enables"
+    },
+    {
+      "source": "probabilistic-objectives",
+      "target": "variational-autoencoder",
+      "type": "enables"
+    },
+    {
+      "source": "prompt-caching",
+      "target": "paged-attention",
+      "type": "implemented_in"
+    },
+    {
+      "source": "prompt-caching",
+      "target": "radix-attention",
+      "type": "implemented_in"
+    },
+    {
+      "source": "prompt-caching",
+      "target": "kv-cache",
+      "type": "prerequisites"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "direct-preference-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "group-relative-policy-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "generalized-advantage-estimation",
+      "type": "prerequisites"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "policy-gradient",
+      "type": "prerequisites"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "reward-modeling",
+      "type": "prerequisites"
+    },
+    {
+      "source": "proximal-policy-optimization",
+      "target": "rlhf",
+      "type": "used_by"
+    },
+    {
+      "source": "radix-attention",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "radix-attention",
+      "target": "prompt-caching",
+      "type": "part_of"
+    },
+    {
+      "source": "radix-attention",
+      "target": "kv-cache",
+      "type": "prerequisites"
+    },
+    {
+      "source": "recurrent-neural-network",
+      "target": "state-space-model",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "recurrent-neural-network",
+      "target": "transformer-architecture",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "recurrent-neural-network",
+      "target": "backpropagation-and-autodiff",
+      "type": "prerequisites"
+    },
+    {
+      "source": "recurrent-neural-network",
+      "target": "neural-network-computation",
+      "type": "prerequisites"
+    },
+    {
+      "source": "reinforcement-learning",
+      "target": "policy-gradient",
+      "type": "enables"
+    },
+    {
+      "source": "reinforcement-learning",
+      "target": "rlhf",
+      "type": "enables"
+    },
+    {
+      "source": "reinforcement-learning",
+      "target": "temporal-difference-learning",
+      "type": "enables"
+    },
+    {
+      "source": "reinforcement-learning",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "residual-network",
+      "target": "manifold-constrained-hyper-connections",
+      "type": "enables"
+    },
+    {
+      "source": "residual-network",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "reward-modeling",
+      "target": "direct-preference-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "reward-modeling",
+      "target": "proximal-policy-optimization",
+      "type": "enables"
+    },
+    {
+      "source": "reward-modeling",
+      "target": "rlhf",
+      "type": "enables"
+    },
+    {
+      "source": "reward-modeling",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "reward-modeling",
+      "target": "supervised-fine-tuning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "rlhf",
+      "target": "direct-preference-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "rlhf",
+      "target": "group-relative-policy-optimization",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "rlhf",
+      "target": "proximal-policy-optimization",
+      "type": "prerequisites"
+    },
+    {
+      "source": "rlhf",
+      "target": "reward-modeling",
+      "type": "prerequisites"
+    },
+    {
+      "source": "rlhf",
+      "target": "supervised-fine-tuning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "rms-normalization",
+      "target": "mixed-precision-training",
+      "type": "affects"
+    },
+    {
+      "source": "rms-normalization",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "rotary-position-embedding",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "rotary-position-embedding",
+      "target": "multi-head-latent-attention",
+      "type": "affects"
+    },
+    {
+      "source": "rotary-position-embedding",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "self-attention",
+      "target": "causal-attention",
+      "type": "enables"
+    },
+    {
+      "source": "self-attention",
+      "target": "flash-attention",
+      "type": "optimized_by"
+    },
+    {
+      "source": "self-attention",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "sentence-embeddings",
+      "target": "vector-database",
+      "type": "enables"
+    },
+    {
+      "source": "sentence-embeddings",
+      "target": "bert",
+      "type": "prerequisites"
+    },
+    {
+      "source": "sequence-model-families",
+      "target": "recurrent-neural-network",
+      "type": "prerequisites"
+    },
+    {
+      "source": "sequence-model-families",
+      "target": "state-space-model",
+      "type": "prerequisites"
+    },
+    {
+      "source": "sequence-model-families",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "spectral-residual-cnn",
+      "target": "vae-lof-anomaly-detection",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "spectral-residual-cnn",
+      "target": "time-series-anomaly-detection",
+      "type": "prerequisites"
+    },
+    {
+      "source": "speculative-decoding",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "speculative-decoding",
+      "target": "causal-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "state-space-model",
+      "target": "recurrent-neural-network",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "state-space-model",
+      "target": "transformer-architecture",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "state-space-model",
+      "target": "recurrent-neural-network",
+      "type": "prerequisites"
+    },
+    {
+      "source": "supervised-fine-tuning",
+      "target": "direct-preference-optimization",
+      "type": "enables"
+    },
+    {
+      "source": "supervised-fine-tuning",
+      "target": "rlhf",
+      "type": "enables"
+    },
+    {
+      "source": "swiglu-feed-forward-network",
+      "target": "transformer-architecture",
+      "type": "part_of"
+    },
+    {
+      "source": "swiglu-feed-forward-network",
+      "target": "neural-network-computation",
+      "type": "prerequisites"
+    },
+    {
+      "source": "temporal-difference-learning",
+      "target": "generalized-advantage-estimation",
+      "type": "enables"
+    },
+    {
+      "source": "temporal-difference-learning",
+      "target": "reinforcement-learning",
+      "type": "prerequisites"
+    },
+    {
+      "source": "tensor-parallelism",
+      "target": "kv-cache",
+      "type": "affects"
+    },
+    {
+      "source": "tensor-parallelism",
+      "target": "fully-sharded-data-parallelism",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "tensor-parallelism",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "time-series-anomaly-detection",
+      "target": "spectral-residual-cnn",
+      "type": "implemented_in"
+    },
+    {
+      "source": "time-series-anomaly-detection",
+      "target": "vae-lof-anomaly-detection",
+      "type": "implemented_in"
+    },
+    {
+      "source": "time-series-anomaly-detection",
+      "target": "classical-ml-methods",
+      "type": "prerequisites"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "graph-neural-network",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "recurrent-neural-network",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "state-space-model",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "causal-attention",
+      "type": "enables"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "kv-cache",
+      "type": "enables"
+    },
+    {
+      "source": "transformer-architecture",
+      "target": "self-attention",
+      "type": "prerequisites"
+    },
+    {
+      "source": "transformer-inference",
+      "target": "transformer-architecture",
+      "type": "prerequisites"
+    },
+    {
+      "source": "transformer-inference-drills",
+      "target": "transformer-inference",
+      "type": "prerequisites"
+    },
+    {
+      "source": "vae-lof-anomaly-detection",
+      "target": "spectral-residual-cnn",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "vae-lof-anomaly-detection",
+      "target": "time-series-anomaly-detection",
+      "type": "prerequisites"
+    },
+    {
+      "source": "vae-lof-anomaly-detection",
+      "target": "variational-autoencoder",
+      "type": "prerequisites"
+    },
+    {
+      "source": "variational-autoencoder",
+      "target": "generative-adversarial-network",
+      "type": "contrasts_with"
+    },
+    {
+      "source": "variational-autoencoder",
+      "target": "diffusion-model",
+      "type": "enables"
+    },
+    {
+      "source": "variational-autoencoder",
+      "target": "vae-lof-anomaly-detection",
+      "type": "enables"
+    },
+    {
+      "source": "variational-autoencoder",
+      "target": "probabilistic-objectives",
+      "type": "prerequisites"
+    },
+    {
+      "source": "vector-database",
+      "target": "sentence-embeddings",
+      "type": "prerequisites"
+    }
+  ]
+}

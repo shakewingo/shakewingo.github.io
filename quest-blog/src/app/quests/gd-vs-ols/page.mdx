@@ -1,20 +1,17 @@
 import QuestLayout from '@/components/QuestLayout'
 
 export const metadata = {
-  title: 'Gradient Descent vs Ordinary Least Square',
+  title: 'Gradient Descent vs Ordinary Least Squares',
   date: '2024-12-01',
-  difficulty: 'Hard Mode',
-  difficultyColor: 'bg-red-500',
-  preview: 'A battle between iterative optimization and closed-form solutions.',
-  excerpt: 'Gradient descent is a popular method applied almost everywhere in machine learning, while ordinary least squares offers a closed-form solution; this post explores where each technique shines.',
+  summary: 'Working through linear regression from two angles: the iterative updates of gradient descent and the normal equation for ordinary least squares, with derivations and notes on when to use each.',
 }
 
 export default ({ children }) => (
   <QuestLayout 
+    slug="gd-vs-ols"
     title={metadata.title} 
     date={metadata.date} 
-    difficulty={metadata.difficulty} 
-    difficultyColor={metadata.difficultyColor}
+    summary={metadata.summary}
   >
     {children}
   </QuestLayout>
@@ -29,7 +26,7 @@ similarity and difference of these two methods.
 Hopefully after this, we will have better understanding on the aspect of both theory and experiments.
 
 ## Theory
-While I was reviewing [Machine Learninxg by Andrew Ng](https://www.youtube.com/playlist?list=PLLssT5z_DsK-h9vYZkQkYNWcItqhlRJLN),
+While I was reviewing [Machine Learning by Andrew Ng](https://www.youtube.com/playlist?list=PLLssT5z_DsK-h9vYZkQkYNWcItqhlRJLN),
 the course skipped the proof part of OLS, by default thinking that we have sufficient matrix knowledge (do we? lol).
 So, I'd like to include the proof here.
 
