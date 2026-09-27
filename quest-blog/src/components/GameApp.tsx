@@ -168,7 +168,7 @@ export default function GameApp({ quests }: { quests: Quest[] }) {
               </span>
             </h1>
             <p className="hero-description">
-              An ML engineer with a curious mind.
+              An AI / ML engineer with a curious mind.
               <br />
               Exploring AI, building things, and connecting
               <br className="desktop-break" /> the dots along the way.
